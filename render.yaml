@@ -3,8 +3,8 @@ services:
     name: albumer
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && npm run build
-    preDeployCommand: npx prisma db push --skip-generate
+    buildCommand: npm ci && npm run build
+    preDeployCommand: npx prisma db push
     startCommand: npm start
     envVars:
       - key: NODE_ENV
