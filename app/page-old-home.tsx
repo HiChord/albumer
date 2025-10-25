@@ -49,7 +49,7 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-4">
-            <Music className="w-16 h-16 text-indigo-600 dark:text-indigo-400" />
+            <Music className="w-16 h-16 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80]" />
           </div>
           <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Albumer
@@ -64,9 +64,9 @@ export default function Home() {
           {!showNewAlbum ? (
             <button
               onClick={() => setShowNewAlbum(true)}
-              className="w-full py-6 px-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 group border-2 border-transparent hover:border-indigo-500"
+              className="w-full py-6 px-8 bg-white dark:bg-slate-800 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-3 group border-2 border-transparent hover:border-[#8b7355] dark:border-[#a0866d]"
             >
-              <Plus className="w-8 h-8 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+              <Plus className="w-8 h-8 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80] group-hover:scale-110 transition-transform" />
               <span className="text-2xl font-semibold text-slate-800 dark:text-slate-200">
                 New Album
               </span>
@@ -78,7 +78,7 @@ export default function Home() {
                 value={newAlbumName}
                 onChange={(e) => setNewAlbumName(e.target.value)}
                 placeholder="Enter album name..."
-                className="w-full text-2xl font-semibold px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:outline-none bg-transparent mb-4"
+                className="w-full text-2xl font-semibold px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent mb-4"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") createAlbum();
@@ -91,7 +91,7 @@ export default function Home() {
               <div className="flex gap-3">
                 <button
                   onClick={createAlbum}
-                  className="flex-1 py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                  className="flex-1 py-3 px-6 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-semibold transition-colors"
                 >
                   Create
                 </button>
@@ -123,10 +123,10 @@ export default function Home() {
                 <Link
                   key={album.id}
                   href={`/album/${album.id}`}
-                  className="bg-white dark:bg-slate-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-6 group border-2 border-transparent hover:border-indigo-500"
+                  className="bg-white dark:bg-slate-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-6 group border-2 border-transparent hover:border-[#8b7355] dark:border-[#a0866d]"
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <Music className="w-8 h-8 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+                    <Music className="w-8 h-8 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80] group-hover:scale-110 transition-transform" />
                     <span className="text-sm text-slate-500 dark:text-slate-400">
                       {album.songCount} {album.songCount === 1 ? "song" : "songs"}
                     </span>

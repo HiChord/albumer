@@ -53,11 +53,11 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#8b7355] to-[#c67b5c] flex items-center justify-center shadow-lg">
               <Music className="w-8 h-8 text-white" />
             </div>
           </div>
-          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-[#8b7355] via-[#9caf88] to-[#c67b5c] bg-clip-text text-transparent">
             Albumer
           </h1>
           <p className="text-xl text-neutral-500">
@@ -70,9 +70,9 @@ export default function Home() {
           {!showNewAlbum ? (
             <button
               onClick={() => setShowNewAlbum(true)}
-              className="w-full py-6 px-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3 group border border-neutral-200 dark:border-neutral-800 hover:border-indigo-500"
+              className="w-full py-6 px-8 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-center gap-3 group border border-neutral-200 dark:border-neutral-800 hover:border-[#8b7355] dark:border-[#a0866d]"
             >
-              <Plus className="w-6 h-6 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform" />
+              <Plus className="w-6 h-6 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80] group-hover:scale-110 transition-transform" />
               <span className="text-xl font-semibold text-neutral-900 dark:text-neutral-100">
                 New Album
               </span>
@@ -84,7 +84,7 @@ export default function Home() {
                 value={newAlbumName}
                 onChange={(e) => setNewAlbumName(e.target.value)}
                 placeholder="Enter album name..."
-                className="w-full text-xl font-semibold px-4 py-3 rounded-lg border border-neutral-200 dark:border-neutral-700 focus:border-indigo-500 focus:outline-none bg-transparent mb-4"
+                className="w-full text-xl font-semibold px-4 py-3 rounded-lg border border-neutral-200 dark:border-neutral-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent mb-4"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleCreateAlbum();
@@ -97,7 +97,7 @@ export default function Home() {
               <div className="flex gap-3">
                 <button
                   onClick={handleCreateAlbum}
-                  className="flex-1 py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                  className="flex-1 py-3 px-6 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-semibold transition-colors"
                 >
                   Create
                 </button>
@@ -129,7 +129,7 @@ export default function Home() {
                 <Link
                   key={album.id}
                   href={`/album/${album.id}`}
-                  className="group bg-white dark:bg-neutral-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-neutral-200 dark:border-neutral-800 hover:border-indigo-500"
+                  className="group bg-white dark:bg-neutral-900 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-6 border border-neutral-200 dark:border-neutral-800 hover:border-[#8b7355] dark:border-[#a0866d]"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">

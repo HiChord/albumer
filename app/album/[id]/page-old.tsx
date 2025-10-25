@@ -218,7 +218,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             </div>
             <button
               onClick={() => setShowAddSong(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-semibold transition-colors"
             >
               <Plus className="w-5 h-5" />
               Add Song
@@ -239,7 +239,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 value={newSongTitle}
                 onChange={(e) => setNewSongTitle(e.target.value)}
                 placeholder="Song title..."
-                className="w-full text-lg px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:outline-none bg-transparent mb-4"
+                className="w-full text-lg px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent mb-4"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === "Enter") addSong();
@@ -252,7 +252,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               <div className="flex gap-3">
                 <button
                   onClick={addSong}
-                  className="flex-1 py-3 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold transition-colors"
+                  className="flex-1 py-3 px-6 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-semibold transition-colors"
                 >
                   Add
                 </button>
@@ -283,7 +283,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             {songs.map((song) => (
               <div
                 key={song.id}
-                className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-2 border-transparent hover:border-indigo-500 transition-all"
+                className="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-2 border-transparent hover:border-[#8b7355] dark:border-[#a0866d] transition-all"
               >
                 {/* Song Header */}
                 <div className="flex items-start justify-between mb-6">
@@ -295,7 +295,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       <span>Updated {new Date(song.updatedAt).toLocaleString()}</span>
                       <button
                         onClick={() => setShowVersionHistory(showVersionHistory === song.id ? null : song.id)}
-                        className="flex items-center gap-1 hover:text-indigo-600 transition-colors"
+                        className="flex items-center gap-1 hover:text-[#8b7355] dark:text-[#a0866d] transition-colors"
                       >
                         <History className="w-4 h-4" />
                         {song.versions.length} versions
@@ -305,7 +305,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   <select
                     value={song.progress}
                     onChange={(e) => updateSong(song.id, "progress", e.target.value)}
-                    className="px-4 py-2 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:outline-none bg-transparent font-semibold"
+                    className="px-4 py-2 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent font-semibold"
                   >
                     <option>Not Started</option>
                     <option>In Progress</option>
@@ -383,7 +383,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         value={song.lyrics}
                         onChange={(e) => updateSong(song.id, "lyrics", e.target.value)}
                         placeholder="Enter lyrics..."
-                        className="w-full h-32 px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:outline-none bg-transparent resize-none"
+                        className="w-full h-32 px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent resize-none"
                       />
                     </div>
                   </div>
@@ -399,7 +399,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         value={song.notes}
                         onChange={(e) => updateSong(song.id, "notes", e.target.value)}
                         placeholder="Add production notes, ideas, etc..."
-                        className="w-full h-32 px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:outline-none bg-transparent resize-none"
+                        className="w-full h-32 px-4 py-3 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-[#8b7355] dark:border-[#a0866d] focus:outline-none bg-transparent resize-none"
                       />
                     </div>
 

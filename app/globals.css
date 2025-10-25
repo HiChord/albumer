@@ -3,18 +3,32 @@
 @tailwind utilities;
 
 :root {
-  --background: #fafafa;
-  --foreground: #0a0a0a;
-  --border: #e5e5e5;
-  --accent: #6366f1;
+  /* Earth tone palette - warm and inviting */
+  --background: #f7f5f2;
+  --foreground: #3a3633;
+  --border: #e0d5c7;
+  --accent: #8b7355;
+  --accent-hover: #a0866d;
+  --sage: #9caf88;
+  --terracotta: #c67b5c;
+  --cream: #f9f7f4;
+  --warm-gray: #5a5550;
+  --soft-peach: #e8d4c0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --border: #262626;
-    --accent: #818cf8;
+    /* Dark earth tones - cozy and elegant */
+    --background: #2a2622;
+    --foreground: #e8e4df;
+    --border: #433d36;
+    --accent: #a0866d;
+    --accent-hover: #b89b80;
+    --sage: #7a8f6f;
+    --terracotta: #b56a4d;
+    --cream: #3a3633;
+    --warm-gray: #9d9288;
+    --soft-peach: #7a6a5a;
   }
 }
 

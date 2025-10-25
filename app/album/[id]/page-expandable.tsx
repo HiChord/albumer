@@ -117,7 +117,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   if (loading || !album) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-[#8b7355] dark:text-[#a0866d]" />
       </div>
     );
   }
@@ -144,7 +144,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             </div>
             <button
               onClick={handleAddSong}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm"
+              className="flex items-center gap-2 px-4 py-2 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-medium text-sm"
             >
               <Plus className="w-4 h-4" />
               Add Track
@@ -161,7 +161,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             <p className="text-neutral-500 mb-6">No tracks yet</p>
             <button
               onClick={handleAddSong}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
+              className="px-6 py-3 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-medium"
             >
               Add Your First Track
             </button>
@@ -185,7 +185,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     {getAudioFile(song) ? (
                       <button
                         onClick={() => setPlayingSong(playingSong === song.id ? null : song.id)}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white"
                       >
                         {playingSong === song.id ? (
                           <Pause className="w-4 h-4" />
@@ -216,7 +216,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <select
                       value={song.progress}
                       onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-indigo-500"
+                      className="w-full px-3 py-1.5 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
                     >
                       <option>Not Started</option>
                       <option>In Progress</option>
@@ -244,7 +244,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         }
                       }}
                       appearance={{
-                        button: `${getLogicFile(song) ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
+                        button: `${getLogicFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
                         allowedContent: "hidden"
                       }}
                       content={{
@@ -266,7 +266,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         }
                       }}
                       appearance={{
-                        button: `${getAudioFile(song) ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
+                        button: `${getAudioFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
                         allowedContent: "hidden"
                       }}
                       content={{
@@ -282,7 +282,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   >
                     <MessageSquare className="w-4 h-4" />
                     {song.comments.length > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-xs bg-indigo-600 text-white rounded-full">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 flex items-center justify-center text-xs bg-[#8b7355] dark:bg-[#a0866d] text-white rounded-full">
                         {song.comments.length}
                       </span>
                     )}
@@ -315,7 +315,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           value={song.lyrics}
                           onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
                           placeholder="Enter lyrics..."
-                          className="w-full h-32 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-indigo-500 resize-none"
+                          className="w-full h-32 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d] resize-none"
                         />
                       </div>
 
@@ -326,7 +326,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           value={song.notes}
                           onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
                           placeholder="Production notes, ideas..."
-                          className="w-full h-32 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-indigo-500 resize-none"
+                          className="w-full h-32 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d] resize-none"
                         />
                       </div>
 
@@ -374,7 +374,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                           {/* Add Reference */}
                           {showRefSearch === song.id ? (
-                            <div className="p-4 rounded-lg bg-white dark:bg-neutral-900 border-2 border-indigo-500">
+                            <div className="p-4 rounded-lg bg-white dark:bg-neutral-900 border-2 border-[#8b7355] dark:border-[#a0866d]">
                               <div className="flex gap-2 mb-3">
                                 <button
                                   onClick={() => {
@@ -401,7 +401,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                   value={refSearchQuery}
                                   onChange={(e) => setRefSearchQuery(e.target.value)}
                                   placeholder="Search..."
-                                  className="flex-1 px-3 py-2 text-sm rounded border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-indigo-500"
+                                  className="flex-1 px-3 py-2 text-sm rounded border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") handleSearchReferences();
                                     if (e.key === "Escape") {
@@ -414,7 +414,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 <button
                                   onClick={handleSearchReferences}
                                   disabled={searchingRefs}
-                                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded disabled:opacity-50"
+                                  className="px-4 py-2 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-sm rounded disabled:opacity-50"
                                 >
                                   {searchingRefs ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
                                 </button>
@@ -436,7 +436,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                       </div>
                                       <button
                                         onClick={() => handleAddReference(song.id, result)}
-                                        className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded"
+                                        className="px-3 py-1 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-xs rounded"
                                       >
                                         Add
                                       </button>
@@ -459,7 +459,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           ) : (
                             <button
                               onClick={() => setShowRefSearch(song.id)}
-                              className="w-full py-3 px-3 text-sm border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg hover:border-indigo-500 hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                              className="w-full py-3 px-3 text-sm border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg hover:border-[#8b7355] dark:border-[#a0866d] hover:bg-neutral-50 dark:hover:bg-neutral-900"
                             >
                               + Add Reference Track
                             </button>
@@ -477,7 +477,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="space-y-3 mb-3">
                       {song.comments.map((comment: any) => (
                         <div key={comment.id} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80] flex-shrink-0">
                             {comment.user[0]}
                           </div>
                           <div className="flex-1">
@@ -500,14 +500,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         value={commentText}
                         onChange={(e) => setCommentText(e.target.value)}
                         placeholder="Add a comment..."
-                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-indigo-500"
+                        className="flex-1 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleAddComment(song.id);
                         }}
                       />
                       <button
                         onClick={() => handleAddComment(song.id)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm rounded-lg font-medium"
+                        className="px-4 py-2 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-sm rounded-lg font-medium"
                       >
                         Post
                       </button>
