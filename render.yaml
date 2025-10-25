@@ -12,10 +12,6 @@ services:
         fromDatabase:
           name: albumer-db
           property: connectionString
-    disk:
-      name: uploads
-      mountPath: /opt/render/project/src/public/uploads
-      sizeGB: 1
 
 databases:
   - name: albumer-db
