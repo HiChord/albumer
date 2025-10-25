@@ -12,6 +12,15 @@ export async function createAlbum(name: string) {
   return album;
 }
 
+export async function updateAlbum(id: string, name: string) {
+  const album = await prisma.album.update({
+    where: { id },
+    data: { name },
+  });
+  revalidatePath(`/album/${id}`);
+  return album;
+}
+
 export async function getAlbums() {
   return await prisma.album.findMany({
     include: {
@@ -42,6 +51,9 @@ export async function getAlbum(id: string) {
             },
           },
         },
+        orderBy: {
+          order: "asc",
+        },
       },
     },
   });
@@ -49,10 +61,21 @@ export async function getAlbum(id: string) {
 
 // Song Actions
 export async function createSong(albumId: string, title: string = "Untitled") {
+  // Get the current max order for this album
+  const existingSongs = await prisma.song.findMany({
+    where: { albumId },
+    select: { order: true },
+    orderBy: { order: "desc" },
+    take: 1,
+  });
+
+  const nextOrder = existingSongs.length > 0 ? existingSongs[0].order + 1 : 0;
+
   const song = await prisma.song.create({
     data: {
       title,
       albumId,
+      order: nextOrder,
       versions: {
         create: {
           changes: "Song created",
@@ -91,6 +114,15 @@ export async function updateSong(
   const { user = "User", ...songData } = data;
   const field = Object.keys(songData)[0];
 
+  // Get current song state for snapshot BEFORE updating
+  const currentSong = await prisma.song.findUnique({
+    where: { id: songId },
+    include: {
+      files: true,
+      references: true,
+    },
+  });
+
   const song = await prisma.song.update({
     where: { id: songId },
     data: {
@@ -100,6 +132,15 @@ export async function updateSong(
           changes: `Updated ${field}`,
           comment: "",
           user,
+          snapshot: JSON.stringify({
+            title: currentSong?.title,
+            lyrics: currentSong?.lyrics,
+            notes: currentSong?.notes,
+            progress: currentSong?.progress,
+            files: currentSong?.files,
+            references: currentSong?.references,
+            timestamp: new Date().toISOString(),
+          }),
         },
       },
     },
@@ -278,6 +319,27 @@ export async function addComment(
   return comment;
 }
 
+export async function updateComment(
+  commentId: string,
+  data: {
+    text?: string;
+    user?: string;
+  }
+) {
+  const comment = await prisma.comment.update({
+    where: { id: commentId },
+    data,
+    include: {
+      song: {
+        select: { albumId: true },
+      },
+    },
+  });
+
+  revalidatePath(`/album/${comment.song.albumId}`);
+  return comment;
+}
+
 export async function deleteComment(commentId: string) {
   const comment = await prisma.comment.findUnique({
     where: { id: commentId },
@@ -372,4 +434,91 @@ export async function searchYouTube(query: string) {
     console.error("YouTube search error:", error);
     return { videos: [] };
   }
+}
+
+// Version History - Update user attribution
+export async function updateVersionUser(versionId: string, user: string) {
+  const version = await prisma.version.update({
+    where: { id: versionId },
+    data: { user },
+    include: {
+      song: {
+        select: { albumId: true },
+      },
+    },
+  });
+
+  revalidatePath(`/album/${version.song.albumId}`);
+  return version;
+}
+
+// Version History - Restore to previous version
+export async function restoreSongVersion(songId: string, versionId: string) {
+  const version = await prisma.version.findUnique({
+    where: { id: versionId },
+  });
+
+  if (!version || !version.snapshot) {
+    throw new Error("Version not found or no snapshot available");
+  }
+
+  const snapshot = JSON.parse(version.snapshot);
+
+  const song = await prisma.song.update({
+    where: { id: songId },
+    data: {
+      title: snapshot.title,
+      lyrics: snapshot.lyrics,
+      notes: snapshot.notes,
+      progress: snapshot.progress,
+      versions: {
+        create: {
+          changes: "Restored from version history",
+          comment: `Restored to ${new Date(version.createdAt).toLocaleString()}`,
+          user: "System",
+          snapshot: JSON.stringify(snapshot),
+        },
+      },
+    },
+    include: {
+      album: true,
+      files: true,
+      references: true,
+      comments: true,
+      versions: {
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+  });
+
+  const albumId = song.albumId;
+  await prisma.album.update({
+    where: { id: albumId },
+    data: { updatedAt: new Date() },
+  });
+
+  revalidatePath(`/album/${albumId}`);
+  return song;
+}
+
+// Reorder songs
+export async function reorderSongs(albumId: string, songIds: string[]) {
+  // Update the order field for each song based on its position in the array
+  await Promise.all(
+    songIds.map((songId, index) =>
+      prisma.song.update({
+        where: { id: songId },
+        data: { order: index },
+      })
+    )
+  );
+
+  await prisma.album.update({
+    where: { id: albumId },
+    data: { updatedAt: new Date() },
+  });
+
+  revalidatePath(`/album/${albumId}`);
 }

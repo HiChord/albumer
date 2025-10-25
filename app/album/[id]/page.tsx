@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import {
   ArrowLeft,
   Plus,
@@ -10,7 +10,8 @@ import {
   Loader2,
   ExternalLink,
   Youtube,
-  Trash2
+  Trash2,
+  Headphones
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -20,11 +21,17 @@ import {
   addReference,
   deleteReference,
   addComment,
+  updateComment,
+  deleteComment,
   searchSpotify,
   searchYouTube,
-  addFile
+  addFile,
+  updateAlbum,
+  reorderSongs
 } from "@/lib/actions";
 import { UploadButton } from "@/lib/uploadthing";
+import VersionHistory from "@/components/VersionHistory";
+import ListenMode from "@/components/ListenMode";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -36,8 +43,17 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [refSearchResults, setRefSearchResults] = useState<any[]>([]);
   const [searchingRefs, setSearchingRefs] = useState(false);
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
+  const [editingComment, setEditingComment] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState<string>("");
+  const [editingCommentUser, setEditingCommentUser] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<string>("Dev");
+  const [editingValues, setEditingValues] = useState<{ [key: string]: any }>({});
+  const [editingAlbumName, setEditingAlbumName] = useState(false);
+  const [albumName, setAlbumName] = useState("");
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [showListenMode, setShowListenMode] = useState(false);
 
   useEffect(() => {
     loadAlbum();
@@ -57,7 +73,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     setLoading(true);
     const data = await getAlbum(resolvedParams.id);
     setAlbum(data);
+    if (data) setAlbumName(data.name);
     setLoading(false);
+  };
+
+  const handleUpdateAlbumName = async () => {
+    if (!albumName.trim() || albumName === album.name) {
+      setEditingAlbumName(false);
+      setAlbumName(album.name);
+      return;
+    }
+    await updateAlbum(resolvedParams.id, albumName);
+    await loadAlbum();
+    setEditingAlbumName(false);
   };
 
   const handleAddSong = async () => {
@@ -65,9 +93,35 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     await loadAlbum();
   };
 
+  // Debounce timers
+  const debounceTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
+
   const handleUpdateSong = async (songId: string, field: string, value: any) => {
-    await updateSong(songId, { [field]: value, user: currentUser });
-    await loadAlbum();
+    // Update local state immediately for responsive UI
+    const key = `${songId}-${field}`;
+    setEditingValues(prev => ({ ...prev, [key]: value }));
+
+    // Debounce the database update
+    if (debounceTimers.current[key]) {
+      clearTimeout(debounceTimers.current[key]);
+    }
+
+    debounceTimers.current[key] = setTimeout(async () => {
+      await updateSong(songId, { [field]: value, user: currentUser });
+      // Remove from editing values after save
+      setEditingValues(prev => {
+        const newValues = { ...prev };
+        delete newValues[key];
+        return newValues;
+      });
+      await loadAlbum();
+    }, 500); // Wait 500ms after user stops typing
+  };
+
+  // Helper to get the current value (from editing state or song)
+  const getValue = (songId: string, field: string, defaultValue: any) => {
+    const key = `${songId}-${field}`;
+    return editingValues[key] !== undefined ? editingValues[key] : defaultValue;
   };
 
   const handleSearchReferences = async () => {
@@ -111,6 +165,62 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     setCommentText({ ...commentText, [songId]: "" });
   };
 
+  const handleStartEditComment = (comment: any) => {
+    setEditingComment(comment.id);
+    setEditingCommentText(comment.text);
+    setEditingCommentUser(comment.user);
+  };
+
+  const handleUpdateComment = async (commentId: string) => {
+    await updateComment(commentId, {
+      text: editingCommentText,
+      user: editingCommentUser
+    });
+    await loadAlbum();
+    setEditingComment(null);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm("Delete this comment?")) return;
+    await deleteComment(commentId);
+    await loadAlbum();
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newSongs = [...album.songs];
+    const [draggedSong] = newSongs.splice(draggedIndex, 1);
+    newSongs.splice(dropIndex, 0, draggedSong);
+
+    setAlbum({ ...album, songs: newSongs });
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const getAudioFile = (song: any) => {
     return song.files?.find((f: any) => f.type === "audio");
   };
@@ -119,53 +229,134 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return song.files?.find((f: any) => f.type === "logic");
   };
 
+  const getAudioFiles = () => {
+    return album.songs
+      .map((song: any) => {
+        const audioFile = getAudioFile(song);
+        if (!audioFile) return null;
+        return {
+          id: audioFile.id,
+          name: audioFile.name,
+          url: audioFile.url,
+          songId: song.id,
+          songTitle: song.title,
+        };
+      })
+      .filter((file: any) => file !== null);
+  };
+
+  const handleReorderFromListenMode = async (reorderedFiles: any[]) => {
+    // Extract song IDs in the new order
+    const songIds = reorderedFiles.map(file => file.songId);
+
+    // Update local state immediately for responsive UI
+    const reorderedSongs = songIds.map(songId =>
+      album.songs.find((s: any) => s.id === songId)
+    );
+    setAlbum({ ...album, songs: reorderedSongs });
+
+    // Update database
+    await reorderSongs(album.id, songIds);
+    await loadAlbum();
+  };
+
+  const themeClass = `theme-${currentUser.toLowerCase()}`;
+
   if (loading || !album) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[#8b7355] dark:text-[#a0866d]" />
+      <div className={`${themeClass} min-h-screen flex items-center justify-center`} style={{ background: 'var(--background)' }}>
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'var(--accent)' }} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl border-b border-neutral-200 dark:border-neutral-800">
-        <div className="max-w-[2000px] mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+    <div className={`${themeClass} min-h-screen`} style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+      {/* Minimal Header */}
+      <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
+        <div className="max-w-[2000px] mx-auto px-8 py-6">
+          <div className="grid grid-cols-3 items-center gap-8">
+            {/* Left: Back */}
             <div className="flex items-center gap-4">
               <Link
                 href="/"
-                className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg"
+                className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-3 h-3" />
+                <span>Back</span>
               </Link>
-              <div>
-                <h1 className="text-2xl font-semibold tracking-tight">{album.name}</h1>
-                <p className="text-sm text-neutral-500">
-                  {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
-                </p>
-              </div>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-neutral-500">User:</span>
-                <select
-                  value={currentUser}
-                  onChange={(e) => setCurrentUser(e.target.value)}
-                  className="px-3 py-2 text-sm font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
+
+            {/* Center: Album Name */}
+            <div className="flex flex-col items-center justify-center">
+              {editingAlbumName ? (
+                <input
+                  type="text"
+                  value={albumName}
+                  onChange={(e) => setAlbumName(e.target.value)}
+                  onBlur={handleUpdateAlbumName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleUpdateAlbumName();
+                    if (e.key === 'Escape') {
+                      setEditingAlbumName(false);
+                      setAlbumName(album.name);
+                    }
+                  }}
+                  className="text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2"
+                  style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className="text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
+                  onClick={() => setEditingAlbumName(true)}
+                  title="Click to edit"
+                  style={{ fontWeight: 200 }}
                 >
-                  <option value="Dev">Dev</option>
-                  <option value="Andy">Andy</option>
-                  <option value="Khal">Khal</option>
-                </select>
-              </div>
+                  {album.name}
+                </h1>
+              )}
+              <p className="text-xs opacity-40 mt-2 uppercase tracking-wider">
+                {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
+              </p>
+            </div>
+
+            {/* Right: User + Listen Mode + Add */}
+            <div className="flex items-center justify-end gap-4">
+              <select
+                value={currentUser}
+                onChange={(e) => setCurrentUser(e.target.value)}
+                className="px-3 py-2 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors"
+                style={{
+                  borderColor: 'var(--border)',
+                  color: 'var(--foreground)'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
+                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
+              >
+                <option value="Dev">Dev</option>
+                <option value="Andy">Andy</option>
+                <option value="Khal">Khal</option>
+              </select>
+              <button
+                onClick={() => setShowListenMode(true)}
+                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                style={{ color: 'var(--accent)' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <Headphones className="w-3 h-3" />
+                <span>Listen</span>
+              </button>
               <button
                 onClick={handleAddSong}
-                className="flex items-center gap-2 px-4 py-2 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-medium text-sm"
+                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                style={{ color: 'var(--accent)' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
-                <Plus className="w-4 h-4" />
-                Add Track
+                <Plus className="w-3 h-3" />
+                <span>Add Track</span>
               </button>
             </div>
           </div>
@@ -173,73 +364,104 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {/* Content */}
-      <div className="max-w-[2000px] mx-auto px-6 py-6">
+      <div className="max-w-[2000px] mx-auto px-8 py-12">
         {album.songs.length === 0 ? (
-          <div className="text-center py-24">
-            <Music className="w-12 h-12 text-neutral-300 dark:text-neutral-700 mx-auto mb-4" />
-            <p className="text-neutral-500 mb-6">No tracks yet</p>
+          <div className="text-center py-32">
+            <div className="w-2 h-2 rounded-full mx-auto mb-8 opacity-20" style={{ background: 'var(--accent)' }}></div>
+            <p className="text-sm opacity-40 font-light tracking-wide mb-12">No tracks yet</p>
             <button
               onClick={handleAddSong}
-              className="px-6 py-3 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white rounded-lg font-medium"
+              className="text-xs uppercase tracking-[0.2em] font-light transition-opacity"
+              style={{ color: 'var(--accent)' }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
             >
               Add Your First Track
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
-            {album.songs.map((song: any, index: number) => (
+          <div className="space-y-px" style={{ background: 'var(--border)' }}>
+            {album.songs.map((song: any, index: number) => {
+              const isDragging = draggedIndex === index;
+              const isDropTarget = dragOverIndex === index && draggedIndex !== index;
+
+              return (
               <div
                 key={song.id}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden"
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+                className="overflow-hidden transition-all duration-200"
+                style={{
+                  background: isDragging
+                    ? 'var(--highlight)'
+                    : isDropTarget
+                    ? 'var(--accent)'
+                    : 'var(--surface-alt)',
+                  opacity: isDragging ? '0.5' : '1',
+                  transform: isDragging ? 'scale(0.98)' : 'scale(1)',
+                  cursor: isDragging ? 'grabbing' : 'grab',
+                  boxShadow: isDropTarget ? '0 0 0 2px var(--accent)' : 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (draggedIndex === null) {
+                    e.currentTarget.style.background = 'var(--surface)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (draggedIndex === null && dragOverIndex !== index) {
+                    e.currentTarget.style.background = 'var(--surface-alt)';
+                  }
+                }}
               >
                 {/* Main Track Row */}
-                <div className="flex items-center gap-4 px-4 py-3 border-b border-neutral-100 dark:border-neutral-800">
-                  {/* Track # */}
-                  <div className="w-8 text-center">
-                    <div className="text-xs text-neutral-400 mb-1">#</div>
-                    <div className="text-sm font-medium">{index + 1}</div>
-                  </div>
-
-                  {/* Play */}
-                  <div className="w-12">
-                    <div className="text-xs text-neutral-400 mb-1 text-center">Play</div>
+                <div className="flex items-center gap-8 px-8 py-6 border-b" style={{ borderColor: 'var(--border)' }}>
+                  {/* Track # + Play */}
+                  <div className="flex items-center gap-6">
+                    <div className="text-xs opacity-30 font-light w-8 text-center">{String(index + 1).padStart(2, '0')}</div>
                     {getAudioFile(song) ? (
                       <button
                         onClick={() => setPlayingSong(playingSong === song.id ? null : song.id)}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white mx-auto"
+                        className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
+                        style={{ background: 'var(--accent)' }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                       >
                         {playingSong === song.id ? (
-                          <Pause className="w-4 h-4" />
+                          <Pause className="w-3 h-3 text-white" />
                         ) : (
-                          <Play className="w-4 h-4 ml-0.5" />
+                          <Play className="w-3 h-3 text-white ml-0.5" />
                         )}
                       </button>
                     ) : (
-                      <div className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 mx-auto">
-                        <Music className="w-4 h-4 text-neutral-400" />
-                      </div>
+                      <div className="w-2 h-2 rounded-full opacity-20" style={{ background: 'var(--accent)' }}></div>
                     )}
                   </div>
 
                   {/* Title */}
-                  <div className="flex-1 min-w-[200px]">
-                    <div className="text-xs text-neutral-400 mb-1">Track Title</div>
+                  <div className="flex-1">
                     <input
                       type="text"
-                      value={song.title}
+                      value={getValue(song.id, "title", song.title)}
                       onChange={(e) => handleUpdateSong(song.id, "title", e.target.value)}
-                      className="w-full bg-transparent border-none focus:outline-none font-medium text-neutral-900 dark:text-neutral-100 placeholder-neutral-400"
-                      placeholder="Track title"
+                      className="w-full bg-transparent border-none focus:outline-none font-light text-lg tracking-tight"
+                      style={{ color: 'var(--foreground)', fontWeight: 300 }}
+                      placeholder="Untitled"
                     />
                   </div>
 
-                  {/* Progress */}
-                  <div className="w-40">
-                    <div className="text-xs text-neutral-400 mb-1">Status</div>
+                  {/* Status */}
+                  <div className="w-32">
                     <select
                       value={song.progress}
                       onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
-                      className="w-full px-3 py-2 text-sm rounded-md border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
+                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors opacity-60 hover:opacity-100"
+                      style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.opacity = '1'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.opacity = '0.6'; }}
                     >
                       <option>Not Started</option>
                       <option>In Progress</option>
@@ -252,7 +474,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                   {/* Logic File */}
                   <div className="w-28">
-                    <div className="text-xs text-neutral-400 mb-1 text-center">Logic File</div>
+                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                      Logic File
+                    </div>
                     <UploadButton
                       endpoint="logicUploader"
                       onClientUploadComplete={async (res) => {
@@ -268,18 +492,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         }
                       }}
                       appearance={{
-                        button: `w-full ${getLogicFile(song) ? 'bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white' : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700'} px-3 py-2 rounded-lg text-xs font-medium transition-colors`,
+                        button: `w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light ${getLogicFile(song) ? 'text-white' : 'opacity-40'}`,
                         allowedContent: "hidden"
                       }}
                       content={{
-                        button: getLogicFile(song) ? "✓ Uploaded" : "Upload"
+                        button: getLogicFile(song) ? "Upload" : "Upload"
                       }}
+                      className={getLogicFile(song) ? '' : 'upload-button-empty'}
                     />
                   </div>
 
                   {/* Audio Bounce */}
                   <div className="w-28">
-                    <div className="text-xs text-neutral-400 mb-1 text-center">Bounce</div>
+                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                      Audio Bounce
+                    </div>
                     <UploadButton
                       endpoint="audioUploader"
                       onClientUploadComplete={async (res) => {
@@ -288,93 +515,104 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             name: res[0].name,
                             type: "audio",
                             url: res[0].url,
-                            mimeType: res[0].type,
+                            mimeType: res[0].url,
                             size: res[0].size,
                           });
                           await loadAlbum();
                         }
                       }}
                       appearance={{
-                        button: `w-full ${getAudioFile(song) ? 'bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white' : 'bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700'} px-3 py-2 rounded-lg text-xs font-medium transition-colors`,
+                        button: `w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light ${getAudioFile(song) ? 'text-white' : 'opacity-40'}`,
                         allowedContent: "hidden"
                       }}
                       content={{
-                        button: getAudioFile(song) ? "✓ Uploaded" : "Upload"
+                        button: getAudioFile(song) ? "Upload" : "Upload"
                       }}
+                      className={getAudioFile(song) ? '' : 'upload-button-empty'}
+                    />
+                  </div>
+
+                  {/* Version History */}
+                  <div className="w-32">
+                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                      History
+                    </div>
+                    <VersionHistory
+                      songId={song.id}
+                      songTitle={song.title}
+                      versions={song.versions || []}
+                      onRestore={loadAlbum}
                     />
                   </div>
                 </div>
 
                 {/* Audio Player */}
                 {playingSong === song.id && getAudioFile(song) && (
-                  <div className="px-4 py-3 bg-neutral-50 dark:bg-neutral-950 border-b border-neutral-100 dark:border-neutral-800">
+                  <div className="px-8 py-4 border-b" style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
                     <audio src={getAudioFile(song).url} controls className="w-full" autoPlay />
                   </div>
                 )}
 
-                {/* Always Visible Content Grid */}
-                <div className="grid grid-cols-4 gap-4 p-4">
-                  {/* Notes (swapped with Lyrics) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2 uppercase tracking-wide">
+                {/* Content Grid */}
+                <div className="grid grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
+                  {/* Notes */}
+                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       Notes
                     </label>
                     <textarea
-                      value={song.notes}
+                      value={getValue(song.id, "notes", song.notes)}
                       onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
-                      placeholder="Production notes, ideas..."
-                      className="w-full h-40 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d] resize-none"
+                      placeholder="..."
+                      className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
+                      style={{ color: 'var(--foreground)' }}
                     />
                   </div>
 
-                  {/* Lyrics (swapped with Notes) */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2 uppercase tracking-wide">
+                  {/* Lyrics */}
+                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       Lyrics
                     </label>
                     <textarea
-                      value={song.lyrics}
+                      value={getValue(song.id, "lyrics", song.lyrics)}
                       onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
-                      placeholder="Enter lyrics..."
-                      className="w-full h-40 px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d] resize-none"
+                      placeholder="..."
+                      className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
+                      style={{ color: 'var(--foreground)' }}
                     />
                   </div>
 
                   {/* References */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2 uppercase tracking-wide">
+                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       References
                     </label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-px max-h-40 overflow-y-auto">
                       {song.references.map((ref: any) => (
                         <div
                           key={ref.id}
-                          className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 group/ref"
+                          className="flex items-center gap-3 py-2 group/ref"
                         >
                           {ref.thumbnail && (
-                            <img src={ref.thumbnail} alt={ref.title} className="w-8 h-8 rounded object-cover flex-shrink-0" />
-                          )}
-                          {ref.type === "spotify" ? (
-                            <Music className="w-3 h-3 text-green-600 flex-shrink-0" />
-                          ) : (
-                            <Youtube className="w-3 h-3 text-red-600 flex-shrink-0" />
+                            <img src={ref.thumbnail} alt={ref.title} className="w-6 h-6 object-cover flex-shrink-0 opacity-60" />
                           )}
                           <div className="min-w-0 flex-1">
-                            <div className="text-xs font-medium truncate">{ref.title}</div>
-                            <div className="text-xs text-neutral-500 truncate">{ref.artist}</div>
+                            <div className="text-xs font-light truncate opacity-80">{ref.title}</div>
+                            <div className="text-xs opacity-40 truncate">{ref.artist}</div>
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover/ref:opacity-100">
+                          <div className="flex items-center gap-2 opacity-0 group-hover/ref:opacity-60">
                             <a
                               href={ref.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded"
+                              className="transition-opacity hover:opacity-100"
                             >
                               <ExternalLink className="w-3 h-3" />
                             </a>
                             <button
                               onClick={() => handleDeleteReference(ref.id)}
-                              className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 rounded"
+                              className="transition-opacity hover:opacity-100"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
@@ -382,16 +620,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         </div>
                       ))}
 
-                      {/* Add Reference Inline */}
+                      {/* Add Reference */}
                       {showRefSearch === song.id ? (
-                        <div className="p-3 rounded-lg bg-white dark:bg-neutral-900 border-2 border-[#8b7355] dark:border-[#a0866d]">
-                          <div className="flex gap-2 mb-2">
+                        <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+                          <div className="flex gap-2 mb-3">
                             <button
                               onClick={() => {
                                 setRefSearchType("spotify");
                                 setRefSearchResults([]);
                               }}
-                              className={`flex-1 py-1 px-2 text-xs rounded ${refSearchType === "spotify" ? 'bg-green-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800'}`}
+                              className={`text-xs uppercase tracking-wider font-light px-3 py-1 transition-opacity ${refSearchType === "spotify" ? 'opacity-100' : 'opacity-30'}`}
                             >
                               Spotify
                             </button>
@@ -400,18 +638,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 setRefSearchType("youtube");
                                 setRefSearchResults([]);
                               }}
-                              className={`flex-1 py-1 px-2 text-xs rounded ${refSearchType === "youtube" ? 'bg-red-600 text-white' : 'bg-neutral-100 dark:bg-neutral-800'}`}
+                              className={`text-xs uppercase tracking-wider font-light px-3 py-1 transition-opacity ${refSearchType === "youtube" ? 'opacity-100' : 'opacity-30'}`}
                             >
                               YouTube
                             </button>
                           </div>
-                          <div className="flex gap-2 mb-2">
+                          <div className="flex gap-2 mb-3">
                             <input
                               type="text"
                               value={refSearchQuery}
                               onChange={(e) => setRefSearchQuery(e.target.value)}
                               placeholder="Search..."
-                              className="flex-1 px-2 py-1 text-xs rounded border border-neutral-200 dark:border-neutral-700 bg-transparent focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
+                              className="flex-1 px-3 py-1.5 text-xs font-light border-b bg-transparent focus:outline-none"
+                              style={{ borderColor: 'var(--border)' }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") handleSearchReferences();
                                 if (e.key === "Escape") {
@@ -424,29 +663,29 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             <button
                               onClick={handleSearchReferences}
                               disabled={searchingRefs}
-                              className="px-2 py-1 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-xs rounded disabled:opacity-50"
+                              className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100"
                             >
                               {searchingRefs ? <Loader2 className="w-3 h-3 animate-spin" /> : "Go"}
                             </button>
                           </div>
 
                           {refSearchResults.length > 0 && (
-                            <div className="space-y-1 mb-2 max-h-32 overflow-y-auto">
+                            <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
                               {refSearchResults.map((result, idx) => (
                                 <div
                                   key={idx}
-                                  className="flex items-center gap-2 p-1 rounded bg-neutral-50 dark:bg-neutral-950 hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                                  className="flex items-center gap-3 py-1 group/result"
                                 >
                                   {result.thumbnail && (
-                                    <img src={result.thumbnail} alt={result.title} className="w-8 h-8 rounded object-cover" />
+                                    <img src={result.thumbnail} alt={result.title} className="w-6 h-6 object-cover opacity-60" />
                                   )}
                                   <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-medium truncate">{result.title}</div>
-                                    <div className="text-xs text-neutral-500 truncate">{result.artist}</div>
+                                    <div className="text-xs font-light truncate">{result.title}</div>
+                                    <div className="text-xs opacity-40 truncate">{result.artist}</div>
                                   </div>
                                   <button
                                     onClick={() => handleAddReference(song.id, result)}
-                                    className="px-2 py-0.5 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-xs rounded"
+                                    className="text-xs uppercase tracking-wider font-light opacity-0 group-hover/result:opacity-60 hover:opacity-100 transition-opacity"
                                   >
                                     Add
                                   </button>
@@ -461,7 +700,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                               setRefSearchQuery("");
                               setRefSearchResults([]);
                             }}
-                            className="w-full py-1 text-xs text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+                            className="text-xs uppercase tracking-wider font-light opacity-30 hover:opacity-100 transition-opacity"
                           >
                             Cancel
                           </button>
@@ -469,36 +708,92 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       ) : (
                         <button
                           onClick={() => setShowRefSearch(song.id)}
-                          className="w-full py-2 px-2 text-xs border border-dashed border-neutral-300 dark:border-neutral-700 rounded-lg hover:border-[#8b7355] dark:border-[#a0866d] hover:bg-neutral-50 dark:hover:bg-neutral-900"
+                          className="mt-4 w-full py-2 text-xs uppercase tracking-wider font-light opacity-30 hover:opacity-100 transition-opacity"
                         >
-                          + Add Reference
+                          + Add
                         </button>
                       )}
                     </div>
                   </div>
 
                   {/* Comments */}
-                  <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-2 uppercase tracking-wide">
+                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       Comments
                     </label>
-                    <div className="space-y-2 max-h-32 overflow-y-auto mb-2">
+                    <div className="space-y-3 max-h-32 overflow-y-auto mb-4">
                       {song.comments.map((comment: any) => (
-                        <div key={comment.id} className="flex gap-2 text-xs">
-                          <div className="w-6 h-6 rounded-full bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 flex items-center justify-center text-xs font-medium text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80] flex-shrink-0">
-                            {comment.user[0]}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline gap-2">
-                              <span className="font-medium">{comment.user}</span>
-                              <span className="text-neutral-500">
-                                {new Date(comment.createdAt).toLocaleDateString()}
-                              </span>
+                        <div key={comment.id} className="group/comment flex gap-3 text-xs">
+                          {editingComment === comment.id ? (
+                            <div className="flex-1 space-y-2">
+                              <div className="flex gap-2">
+                                <select
+                                  value={editingCommentUser}
+                                  onChange={(e) => setEditingCommentUser(e.target.value)}
+                                  className="px-2 py-1 text-xs font-light border-b bg-transparent focus:outline-none"
+                                  style={{ borderColor: 'var(--border)' }}
+                                >
+                                  <option value="Dev">Dev</option>
+                                  <option value="Andy">Andy</option>
+                                  <option value="Khal">Khal</option>
+                                </select>
+                              </div>
+                              <textarea
+                                value={editingCommentText}
+                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                className="w-full px-2 py-1.5 text-xs font-light border bg-transparent focus:outline-none resize-none"
+                                style={{ borderColor: 'var(--border)' }}
+                                rows={2}
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleUpdateComment(comment.id)}
+                                  className="text-xs uppercase tracking-wider font-light opacity-60 hover:opacity-100 transition-opacity"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingComment(null)}
+                                  className="text-xs uppercase tracking-wider font-light opacity-30 hover:opacity-100 transition-opacity"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
                             </div>
-                            <p className="text-neutral-700 dark:text-neutral-300">
-                              {comment.text}
-                            </p>
-                          </div>
+                          ) : (
+                            <>
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-light flex-shrink-0 opacity-60" style={{ background: 'var(--highlight)' }}>
+                                {comment.user[0]}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 mb-1">
+                                  <span className="font-light opacity-80">{comment.user}</span>
+                                  <span className="opacity-30 text-[10px]">
+                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                  </span>
+                                  <div className="flex gap-2 ml-auto opacity-0 group-hover/comment:opacity-40">
+                                    <button
+                                      onClick={() => handleStartEditComment(comment)}
+                                      className="hover:opacity-100 transition-opacity"
+                                      title="Edit"
+                                    >
+                                      <span className="text-[10px]">Edit</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteComment(comment.id)}
+                                      className="hover:opacity-100 transition-opacity"
+                                      title="Delete"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <p className="font-light opacity-60 leading-relaxed">
+                                  {comment.text}
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -507,15 +802,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         type="text"
                         value={commentText[song.id] || ""}
                         onChange={(e) => setCommentText({ ...commentText, [song.id]: e.target.value })}
-                        placeholder="Add comment..."
-                        className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-[#8b7355] dark:border-[#a0866d]"
+                        placeholder="..."
+                        className="flex-1 px-3 py-1.5 text-xs font-light border-b bg-transparent focus:outline-none"
+                        style={{ borderColor: 'var(--border)' }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter") handleAddComment(song.id);
                         }}
                       />
                       <button
                         onClick={() => handleAddComment(song.id)}
-                        className="px-3 py-1.5 bg-[#8b7355] dark:bg-[#a0866d] hover:bg-[#a0866d] dark:hover:bg-[#b89b80] text-white text-xs rounded-lg font-medium"
+                        className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100"
                       >
                         Post
                       </button>
@@ -523,10 +819,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
+
+      {/* Listen Mode */}
+      <ListenMode
+        isOpen={showListenMode}
+        onClose={() => setShowListenMode(false)}
+        audioFiles={getAudioFiles()}
+        onReorder={handleReorderFromListenMode}
+      />
     </div>
   );
 }

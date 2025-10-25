@@ -23,6 +23,7 @@ model Song {
   lyrics     String      @default("")
   notes      String      @default("")
   progress   String      @default("Not Started")
+  order      Int         @default(0)
   albumId    String
   album      Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
   createdAt  DateTime    @default(now())
@@ -83,6 +84,9 @@ model Version {
   songId    String
   song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
+
+  // Full snapshot data for time travel
+  snapshot  String?  // Stores complete song state as JSON string
 
   @@map("versions")
 }

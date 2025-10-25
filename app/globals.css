@@ -32,6 +32,122 @@
   }
 }
 
+/* Home Page Theme - Warm Peach & Cream */
+.theme-home {
+  --background: #faf8f5;
+  --foreground: #3d3935;
+  --border: #ebe6df;
+  --accent: #d4a574;
+  --accent-hover: #e0b887;
+  --secondary: #c8a882;
+  --tertiary: #e6c9a8;
+  --surface: #ffffff;
+  --surface-alt: #f5f0ea;
+  --highlight: #f4e4d4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-home {
+    --background: #1f1d1a;
+    --foreground: #ede8e0;
+    --border: #3a3530;
+    --accent: #c9996d;
+    --accent-hover: #daa97d;
+    --secondary: #b0916f;
+    --tertiary: #8a7456;
+    --surface: #2a2723;
+    --surface-alt: #332f2a;
+    --highlight: #3d3832;
+  }
+}
+
+/* Dev Theme - Soft Purple & Lavender */
+.theme-dev {
+  --background: #fbfafd;
+  --foreground: #4a4556;
+  --border: #f0edf7;
+  --accent: #b8a8d8;
+  --accent-hover: #c9bde4;
+  --secondary: #d4c8e8;
+  --tertiary: #e3dbf0;
+  --surface: #ffffff;
+  --surface-alt: #f7f4fb;
+  --highlight: #ede8f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-dev {
+    --background: #1d1a24;
+    --foreground: #ede9f5;
+    --border: #342f42;
+    --accent: #9884c8;
+    --accent-hover: #aa96d8;
+    --secondary: #8674b8;
+    --tertiary: #6d5d9a;
+    --surface: #262132;
+    --surface-alt: #2f2a3d;
+    --highlight: #3a3448;
+  }
+}
+
+/* Khal Theme - Soft Sage & Mint Green */
+.theme-khal {
+  --background: #f7fbf8;
+  --foreground: #3a433d;
+  --border: #e4efe8;
+  --accent: #88b89a;
+  --accent-hover: #9cc7ac;
+  --secondary: #a4ccb1;
+  --tertiary: #c1ddc9;
+  --surface: #ffffff;
+  --surface-alt: #eff7f2;
+  --highlight: #dff0e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-khal {
+    --background: #1a231d;
+    --foreground: #e8f2ed;
+    --border: #2e3d33;
+    --accent: #7ba88c;
+    --accent-hover: #8db89d;
+    --secondary: #6b9880;
+    --tertiary: #5a8169;
+    --surface: #212b25;
+    --surface-alt: #293530;
+    --highlight: #333f38;
+  }
+}
+
+/* Andy Theme - Soft Blue & Periwinkle */
+.theme-andy {
+  --background: #fafbfd;
+  --foreground: #444a56;
+  --border: #edf2f7;
+  --accent: #a0b8d8;
+  --accent-hover: #b4c8e4;
+  --secondary: #c0d3ea;
+  --tertiary: #d8e4f2;
+  --surface: #ffffff;
+  --surface-alt: #f5f8fb;
+  --highlight: #e8eff7;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-andy {
+    --background: #1a1f26;
+    --foreground: #e8ecf2;
+    --border: #2e3642;
+    --accent: #7a98c0;
+    --accent-hover: #8ba8d0;
+    --secondary: #6a87ad;
+    --tertiary: #5a7492;
+    --surface: #212630;
+    --surface-alt: #293038;
+    --highlight: #333d48;
+  }
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -115,4 +231,27 @@ body {
   transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
+}
+
+/* UploadThing button styling */
+:global(.upload-button-empty) button {
+  background: transparent !important;
+  color: var(--foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+}
+
+:global(.upload-button-empty) button:hover {
+  opacity: 1 !important;
+  border-color: var(--accent) !important;
+}
+
+:global(button[data-ut-element="button"]) {
+  background: var(--accent) !important;
+  border: none !important;
+  border-radius: 9999px !important;
+}
+
+:global(button[data-ut-element="button"]):hover {
+  opacity: 0.8 !important;
 }
