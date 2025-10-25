@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFile } from "fs/promises";
-import { join } from "path";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,28 +9,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
+    // For free tier compatibility, convert to base64 data URL
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-
-    // Generate unique filename
-    const timestamp = Date.now();
-    const filename = `${timestamp}-${file.name}`;
-    const filepath = join(process.cwd(), "public", "uploads", filename);
-
-    // Write file
-    await writeFile(filepath, buffer);
-
-    // Return public URL
-    const url = `/uploads/${filename}`;
+    const base64 = buffer.toString('base64');
+    const dataUrl = `data:${file.type};base64,${base64}`;
 
     return NextResponse.json({
       success: true,
-      file: {
-        name: file.name,
-        url: url,
-        size: file.size,
-        mimeType: file.type,
-      },
+      name: file.name,
+      url: dataUrl,
+      size: file.size,
+      mimeType: file.type,
     });
   } catch (error) {
     console.error("Upload error:", error);

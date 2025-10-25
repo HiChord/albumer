@@ -28,7 +28,6 @@ import {
   searchYouTube,
   addFile
 } from "@/lib/actions";
-import { UploadButton } from "@/lib/uploadthing";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -112,6 +111,34 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
   const getLogicFile = (song: any) => {
     return song.files?.find((f: any) => f.type === "logic");
+  };
+
+  const handleFileUpload = async (songId: string, file: File, type: "audio" | "logic") => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("songId", songId);
+    formData.append("type", type);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        await addFile(songId, {
+          name: data.name,
+          type: type,
+          url: data.url,
+          mimeType: file.type,
+          size: file.size,
+        });
+        await loadAlbum();
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+    }
   };
 
   if (loading || !album) {
@@ -229,50 +256,30 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                   {/* Files */}
                   <div className="flex items-center gap-2">
-                    <UploadButton
-                      endpoint="logicUploader"
-                      onClientUploadComplete={async (res) => {
-                        if (res?.[0]) {
-                          await addFile(song.id, {
-                            name: res[0].name,
-                            type: "logic",
-                            url: res[0].url,
-                            mimeType: res[0].type,
-                            size: res[0].size,
-                          });
-                          await loadAlbum();
-                        }
-                      }}
-                      appearance={{
-                        button: `${getLogicFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
-                        allowedContent: "hidden"
-                      }}
-                      content={{
-                        button: <FileText className="w-4 h-4" />
-                      }}
-                    />
-                    <UploadButton
-                      endpoint="audioUploader"
-                      onClientUploadComplete={async (res) => {
-                        if (res?.[0]) {
-                          await addFile(song.id, {
-                            name: res[0].name,
-                            type: "audio",
-                            url: res[0].url,
-                            mimeType: res[0].type,
-                            size: res[0].size,
-                          });
-                          await loadAlbum();
-                        }
-                      }}
-                      appearance={{
-                        button: `${getAudioFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] dark:bg-indigo-900/30 text-[#8b7355] dark:text-[#a0866d] dark:text-[#a0866d] dark:text-[#b89b80]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8`,
-                        allowedContent: "hidden"
-                      }}
-                      content={{
-                        button: <FileAudio className="w-4 h-4" />
-                      }}
-                    />
+                    <label className={`${getLogicFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] text-[#8b7355] dark:text-[#a0866d]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8 flex items-center justify-center cursor-pointer`}>
+                      <FileText className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept=".logicx,.logic"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(song.id, file, "logic");
+                        }}
+                      />
+                    </label>
+                    <label className={`${getAudioFile(song) ? 'bg-[#e8d4c0] dark:bg-[#7a6a5a] text-[#8b7355] dark:text-[#a0866d]' : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 hover:text-neutral-600'} p-2 rounded-lg h-8 w-8 flex items-center justify-center cursor-pointer`}>
+                      <FileAudio className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept="audio/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleFileUpload(song.id, file, "audio");
+                        }}
+                      />
+                    </label>
                   </div>
 
                   {/* Comments */}

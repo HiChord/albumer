@@ -281,7 +281,7 @@ export default function VersionHistory({ songId, songTitle, versions, onRestore 
                       {/* Comment */}
                       {version.comment && (
                         <div className="mt-3 text-xs opacity-60 italic font-light">
-                          "{version.comment}"
+                          &quot;{version.comment}&quot;
                         </div>
                       )}
                     </div>
