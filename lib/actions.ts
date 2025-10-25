@@ -85,19 +85,21 @@ export async function updateSong(
     lyrics?: string;
     notes?: string;
     progress?: string;
+    user?: string;
   }
 ) {
-  const field = Object.keys(data)[0];
+  const { user = "User", ...songData } = data;
+  const field = Object.keys(songData)[0];
 
   const song = await prisma.song.update({
     where: { id: songId },
     data: {
-      ...data,
+      ...songData,
       versions: {
         create: {
           changes: `Updated ${field}`,
           comment: "",
-          user: "User",
+          user,
         },
       },
     },
