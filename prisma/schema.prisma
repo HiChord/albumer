@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Album {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  songs     Song[]
+
+  @@map("albums")
+}
+
+model Song {
+  id         String      @id @default(cuid())
+  title      String
+  lyrics     String      @default("")
+  notes      String      @default("")
+  progress   String      @default("Not Started")
+  albumId    String
+  album      Album       @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  files      File[]
+  references Reference[]
+  comments   Comment[]
+  versions   Version[]
+
+  @@map("songs")
+}
+
+model File {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   // "logic" or "audio"
+  url       String   // URL to file in cloud storage
+  mimeType  String
+  size      Int
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("files")
+}
+
+model Reference {
+  id        String   @id @default(cuid())
+  type      String   // "spotify" or "youtube"
+  title     String
+  artist    String
+  url       String
+  thumbnail String?
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("references")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  user      String
+  text      String
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("comments")
+}
+
+model Version {
+  id        String   @id @default(cuid())
+  changes   String
+  comment   String   @default("")
+  user      String
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@map("versions")
+}
