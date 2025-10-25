@@ -1,0 +1,14 @@
+{
+  "buildCommand": "prisma generate && next build",
+  "framework": "nextjs",
+  "installCommand": "npm install",
+  "devCommand": "next dev",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "UPLOADTHING_SECRET": "@uploadthing_secret",
+    "UPLOADTHING_APP_ID": "@uploadthing_app_id",
+    "SPOTIFY_CLIENT_ID": "@spotify_client_id",
+    "SPOTIFY_CLIENT_SECRET": "@spotify_client_secret",
+    "YOUTUBE_API_KEY": "@youtube_api_key"
+  }
+}
