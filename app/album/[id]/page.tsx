@@ -29,9 +29,9 @@ import {
   updateAlbum,
   reorderSongs
 } from "@/lib/actions";
-import { UploadButton } from "@/lib/uploadthing";
 import VersionHistory from "@/components/VersionHistory";
 import ListenMode from "@/components/ListenMode";
+import FileUpload from "@/components/FileUpload";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -477,28 +477,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Logic File
                     </div>
-                    <UploadButton
-                      endpoint="logicUploader"
-                      onClientUploadComplete={async (res) => {
-                        if (res?.[0]) {
-                          await addFile(song.id, {
-                            name: res[0].name,
-                            type: "logic",
-                            url: res[0].url,
-                            mimeType: res[0].type,
-                            size: res[0].size,
-                          });
-                          await loadAlbum();
-                        }
+                    <FileUpload
+                      label="Upload"
+                      accept=".logicx,.logic"
+                      onUploadComplete={async (file) => {
+                        await addFile(song.id, {
+                          name: file.name,
+                          type: "logic",
+                          url: file.url,
+                          mimeType: file.mimeType,
+                          size: file.size,
+                        });
+                        await loadAlbum();
                       }}
-                      appearance={{
-                        button: `w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light ${getLogicFile(song) ? 'text-white' : 'opacity-40'}`,
-                        allowedContent: "hidden"
-                      }}
-                      content={{
-                        button: getLogicFile(song) ? "Upload" : "Upload"
-                      }}
-                      className={getLogicFile(song) ? '' : 'upload-button-empty'}
                     />
                   </div>
 
@@ -507,28 +498,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Audio Bounce
                     </div>
-                    <UploadButton
-                      endpoint="audioUploader"
-                      onClientUploadComplete={async (res) => {
-                        if (res?.[0]) {
-                          await addFile(song.id, {
-                            name: res[0].name,
-                            type: "audio",
-                            url: res[0].url,
-                            mimeType: res[0].url,
-                            size: res[0].size,
-                          });
-                          await loadAlbum();
-                        }
+                    <FileUpload
+                      label="Upload"
+                      accept="audio/*"
+                      onUploadComplete={async (file) => {
+                        await addFile(song.id, {
+                          name: file.name,
+                          type: "audio",
+                          url: file.url,
+                          mimeType: file.mimeType,
+                          size: file.size,
+                        });
+                        await loadAlbum();
                       }}
-                      appearance={{
-                        button: `w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light ${getAudioFile(song) ? 'text-white' : 'opacity-40'}`,
-                        allowedContent: "hidden"
-                      }}
-                      content={{
-                        button: getAudioFile(song) ? "Upload" : "Upload"
-                      }}
-                      className={getAudioFile(song) ? '' : 'upload-button-empty'}
                     />
                   </div>
 
