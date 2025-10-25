@@ -37,10 +37,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [searchingRefs, setSearchingRefs] = useState(false);
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<string>("Dev");
 
   useEffect(() => {
     loadAlbum();
+    // Load saved user from localStorage
+    const savedUser = localStorage.getItem("albumer_user");
+    if (savedUser) {
+      setCurrentUser(savedUser);
+    }
   }, [resolvedParams.id]);
+
+  useEffect(() => {
+    // Save user to localStorage whenever it changes
+    localStorage.setItem("albumer_user", currentUser);
+  }, [currentUser]);
 
   const loadAlbum = async () => {
     setLoading(true);
@@ -55,7 +66,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   };
 
   const handleUpdateSong = async (songId: string, field: string, value: any) => {
-    await updateSong(songId, { [field]: value });
+    await updateSong(songId, { [field]: value, user: currentUser });
     await loadAlbum();
   };
 
@@ -93,7 +104,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     if (!commentText[songId]?.trim()) return;
 
     await addComment(songId, {
-      user: "User",
+      user: currentUser,
       text: commentText[songId]
     });
     await loadAlbum();
@@ -136,13 +147,27 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleAddSong}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm"
-            >
-              <Plus className="w-4 h-4" />
-              Add Track
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-neutral-500">User:</span>
+                <select
+                  value={currentUser}
+                  onChange={(e) => setCurrentUser(e.target.value)}
+                  className="px-3 py-2 text-sm font-medium rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 focus:outline-none focus:border-indigo-500"
+                >
+                  <option value="Dev">Dev</option>
+                  <option value="Andy">Andy</option>
+                  <option value="Khal">Khal</option>
+                </select>
+              </div>
+              <button
+                onClick={handleAddSong}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium text-sm"
+              >
+                <Plus className="w-4 h-4" />
+                Add Track
+              </button>
+            </div>
           </div>
         </div>
       </div>
