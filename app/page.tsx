@@ -25,9 +25,14 @@ export default function Home() {
 
   const loadAlbums = async () => {
     setLoading(true);
-    const albums = await getAlbums();
-    setRecentAlbums(albums.slice(0, 6));
-    setLoading(false);
+    try {
+      const albums = await getAlbums();
+      setRecentAlbums(albums.slice(0, 6));
+    } catch (error) {
+      console.error("Failed to load albums:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreateAlbum = async () => {
