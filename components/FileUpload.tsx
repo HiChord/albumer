@@ -8,6 +8,8 @@ interface FileUploadProps {
     url: string;
     size: number;
     mimeType: string;
+    externalId?: string | null;
+    previewUrl?: string | null;
   }) => void;
   accept?: string;
   label: string;
@@ -38,6 +40,10 @@ export default function FileUpload({ onUploadComplete, accept, label }: FileUplo
       }
 
       const data = await response.json();
+      if (!data.file) {
+        throw new Error("Upload response missing file");
+      }
+
       onUploadComplete(data.file);
 
       // Reset input

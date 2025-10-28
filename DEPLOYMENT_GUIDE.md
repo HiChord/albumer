@@ -41,12 +41,15 @@ Vercel will:
 
 After deployment, add these in Vercel Dashboard → Settings → Environment Variables:
 
-### Required for File Uploads
+### Required for File Uploads (Google Drive)
 ```
-UPLOADTHING_SECRET=your_secret
-UPLOADTHING_APP_ID=your_app_id
+GOOGLE_SERVICE_ACCOUNT_EMAIL=service-account@project.iam.gserviceaccount.com
+GOOGLE_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n
+GOOGLE_DRIVE_PARENT_ID=drive_folder_id
 ```
-Get from: [uploadthing.com](https://uploadthing.com)
+1. In Google Cloud Console, create a service account and download its JSON key.
+2. Share a folder in Google Drive with that service account (Editor access).
+3. Use the folder ID in `GOOGLE_DRIVE_PARENT_ID`.
 
 ### Required for Database
 ```
@@ -84,7 +87,7 @@ All services have generous free tiers:
 
 - **Vercel**: 100GB bandwidth/month
 - **Neon DB**: 512MB storage, 0.5GB data transfer
-- **UploadThing**: 2GB storage, 2GB bandwidth
+- **Google Drive**: 15GB shared across the Google account (service account uses the parent drive quota)
 - **Spotify API**: Unlimited requests
 - **YouTube API**: 10,000 units/day
 

@@ -1,104 +1,94 @@
 "use server";
 
-import { prisma } from "./prisma";
+import * as storage from "./localStorage";
 import { revalidatePath } from "next/cache";
 
 // Album Actions
 export async function createAlbum(name: string) {
-  const album = await prisma.album.create({
-    data: { name },
-  });
+  const album = await storage.createAlbum(name);
   revalidatePath("/");
   return album;
 }
 
 export async function updateAlbum(id: string, name: string) {
-  const album = await prisma.album.update({
-    where: { id },
-    data: { name },
-  });
+  const album = await storage.updateAlbum(id, name);
   revalidatePath(`/album/${id}`);
   return album;
 }
 
 export async function getAlbums() {
-  return await prisma.album.findMany({
-    include: {
-      songs: true,
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-  });
+  const albums = await storage.getAllAlbums();
+
+  // Get songs for each album
+  const albumsWithSongs = await Promise.all(
+    albums.map(async (album) => {
+      const songs = await storage.getSongsByAlbumId(album.id);
+      return {
+        ...album,
+        songs,
+      };
+    })
+  );
+
+  // Sort by most recently updated
+  return albumsWithSongs.sort((a, b) =>
+    new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+  );
 }
 
 export async function getAlbum(id: string) {
-  return await prisma.album.findUnique({
-    where: { id },
-    include: {
-      songs: {
-        include: {
-          files: true,
-          references: true,
-          comments: {
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-          versions: {
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-        },
-        orderBy: {
-          order: "asc",
-        },
-      },
-    },
-  });
+  const album = await storage.getAlbumById(id);
+  if (!album) return null;
+
+  const songs = await storage.getSongsByAlbumId(id);
+
+  // Get all related data for each song
+  const songsWithData = await Promise.all(
+    songs.map(async (song) => {
+      const [files, references, comments, versions] = await Promise.all([
+        storage.getFilesBySongId(song.id),
+        storage.getReferencesBySongId(song.id),
+        storage.getCommentsBySongId(song.id),
+        storage.getVersionsBySongId(song.id),
+      ]);
+
+      return {
+        ...song,
+        files,
+        references,
+        comments,
+        versions,
+      };
+    })
+  );
+
+  return {
+    ...album,
+    songs: songsWithData,
+  };
 }
 
 // Song Actions
 export async function createSong(albumId: string, title: string = "Untitled") {
-  // Get the current max order for this album
-  const existingSongs = await prisma.song.findMany({
-    where: { albumId },
-    select: { order: true },
-    orderBy: { order: "desc" },
-    take: 1,
-  });
+  const song = await storage.createSong(albumId, title);
 
-  const nextOrder = existingSongs.length > 0 ? existingSongs[0].order + 1 : 0;
-
-  const song = await prisma.song.create({
-    data: {
-      title,
-      albumId,
-      order: nextOrder,
-      versions: {
-        create: {
-          changes: "Song created",
-          comment: "Initial creation",
-          user: "User",
-        },
-      },
-    },
-    include: {
-      files: true,
-      references: true,
-      comments: true,
-      versions: true,
-    },
-  });
-
-  await prisma.album.update({
-    where: { id: albumId },
-    data: { updatedAt: new Date() },
-  });
+  // Get related data
+  const [files, references, comments, versions] = await Promise.all([
+    storage.getFilesBySongId(song.id),
+    storage.getReferencesBySongId(song.id),
+    storage.getCommentsBySongId(song.id),
+    storage.getVersionsBySongId(song.id),
+  ]);
 
   revalidatePath(`/album/${albumId}`);
-  return song;
+
+  return {
+    ...song,
+    files,
+    references,
+    comments,
+    versions,
+  };
 }
 
 export async function updateSong(
@@ -112,68 +102,36 @@ export async function updateSong(
   }
 ) {
   const { user = "User", ...songData } = data;
-  const field = Object.keys(songData)[0];
 
-  // Get current song state for snapshot BEFORE updating
-  const currentSong = await prisma.song.findUnique({
-    where: { id: songId },
-    include: {
-      files: true,
-      references: true,
-    },
-  });
+  const song = await storage.updateSong(songId, songData, user);
+  if (!song) return null;
 
-  const song = await prisma.song.update({
-    where: { id: songId },
-    data: {
-      ...songData,
-      versions: {
-        create: {
-          changes: `Updated ${field}`,
-          comment: "",
-          user,
-          snapshot: JSON.stringify({
-            title: currentSong?.title,
-            lyrics: currentSong?.lyrics,
-            notes: currentSong?.notes,
-            progress: currentSong?.progress,
-            files: currentSong?.files,
-            references: currentSong?.references,
-            timestamp: new Date().toISOString(),
-          }),
-        },
-      },
-    },
-    include: {
-      album: true,
-      files: true,
-      references: true,
-      comments: true,
-      versions: true,
-    },
-  });
+  // Get related data
+  const [files, references, comments, versions] = await Promise.all([
+    storage.getFilesBySongId(song.id),
+    storage.getReferencesBySongId(song.id),
+    storage.getCommentsBySongId(song.id),
+    storage.getVersionsBySongId(song.id),
+  ]);
 
-  await prisma.album.update({
-    where: { id: song.albumId },
-    data: { updatedAt: new Date() },
-  });
-
+  const album = await storage.getAlbumById(song.albumId);
   revalidatePath(`/album/${song.albumId}`);
-  return song;
+
+  return {
+    ...song,
+    album,
+    files,
+    references,
+    comments,
+    versions,
+  };
 }
 
 export async function deleteSong(songId: string) {
-  const song = await prisma.song.findUnique({
-    where: { id: songId },
-    select: { albumId: true },
-  });
-
+  const song = await storage.getSongById(songId);
   if (!song) return;
 
-  await prisma.song.delete({
-    where: { id: songId },
-  });
-
+  await storage.deleteSong(songId);
   revalidatePath(`/album/${song.albumId}`);
 }
 
@@ -186,39 +144,13 @@ export async function addFile(
     url: string;
     mimeType: string;
     size: number;
+    externalId?: string;
   }
 ) {
-  const file = await prisma.file.create({
-    data: {
-      ...data,
-      songId,
-    },
-  });
+  const file = await storage.createFile(songId, data);
 
-  const song = await prisma.song.findUnique({
-    where: { id: songId },
-    select: { albumId: true },
-  });
-
+  const song = await storage.getSongById(songId);
   if (song) {
-    await prisma.song.update({
-      where: { id: songId },
-      data: {
-        versions: {
-          create: {
-            changes: `Uploaded ${data.type} file`,
-            comment: data.name,
-            user: "User",
-          },
-        },
-      },
-    });
-
-    await prisma.album.update({
-      where: { id: song.albumId },
-      data: { updatedAt: new Date() },
-    });
-
     revalidatePath(`/album/${song.albumId}`);
   }
 
@@ -234,39 +166,13 @@ export async function addReference(
     artist: string;
     url: string;
     thumbnail?: string;
+    user?: string;
   }
 ) {
-  const reference = await prisma.reference.create({
-    data: {
-      ...data,
-      songId,
-    },
-  });
+  const reference = await storage.createReference(songId, data);
 
-  const song = await prisma.song.findUnique({
-    where: { id: songId },
-    select: { albumId: true },
-  });
-
+  const song = await storage.getSongById(songId);
   if (song) {
-    await prisma.song.update({
-      where: { id: songId },
-      data: {
-        versions: {
-          create: {
-            changes: "Added reference",
-            comment: data.title,
-            user: "User",
-          },
-        },
-      },
-    });
-
-    await prisma.album.update({
-      where: { id: song.albumId },
-      data: { updatedAt: new Date() },
-    });
-
     revalidatePath(`/album/${song.albumId}`);
   }
 
@@ -274,22 +180,15 @@ export async function addReference(
 }
 
 export async function deleteReference(referenceId: string) {
-  const reference = await prisma.reference.findUnique({
-    where: { id: referenceId },
-    include: {
-      song: {
-        select: { albumId: true },
-      },
-    },
-  });
-
+  const reference = (await storage.getAllReferences()).find((r) => r.id === referenceId);
   if (!reference) return;
 
-  await prisma.reference.delete({
-    where: { id: referenceId },
-  });
+  await storage.deleteReference(referenceId);
 
-  revalidatePath(`/album/${reference.song.albumId}`);
+  const song = await storage.getSongById(reference.songId);
+  if (song) {
+    revalidatePath(`/album/${song.albumId}`);
+  }
 }
 
 // Comment Actions
@@ -300,18 +199,9 @@ export async function addComment(
     text: string;
   }
 ) {
-  const comment = await prisma.comment.create({
-    data: {
-      ...data,
-      songId,
-    },
-  });
+  const comment = await storage.createComment(songId, data);
 
-  const song = await prisma.song.findUnique({
-    where: { id: songId },
-    select: { albumId: true },
-  });
-
+  const song = await storage.getSongById(songId);
   if (song) {
     revalidatePath(`/album/${song.albumId}`);
   }
@@ -326,37 +216,27 @@ export async function updateComment(
     user?: string;
   }
 ) {
-  const comment = await prisma.comment.update({
-    where: { id: commentId },
-    data,
-    include: {
-      song: {
-        select: { albumId: true },
-      },
-    },
-  });
+  const comment = await storage.updateComment(commentId, data);
+  if (!comment) return null;
 
-  revalidatePath(`/album/${comment.song.albumId}`);
+  const song = await storage.getSongById(comment.songId);
+  if (song) {
+    revalidatePath(`/album/${song.albumId}`);
+  }
+
   return comment;
 }
 
 export async function deleteComment(commentId: string) {
-  const comment = await prisma.comment.findUnique({
-    where: { id: commentId },
-    include: {
-      song: {
-        select: { albumId: true },
-      },
-    },
-  });
-
+  const comment = (await storage.getAllComments()).find((c) => c.id === commentId);
   if (!comment) return;
 
-  await prisma.comment.delete({
-    where: { id: commentId },
-  });
+  await storage.deleteComment(commentId);
 
-  revalidatePath(`/album/${comment.song.albumId}`);
+  const song = await storage.getSongById(comment.songId);
+  if (song) {
+    revalidatePath(`/album/${song.albumId}`);
+  }
 }
 
 // Spotify Integration
@@ -438,87 +318,44 @@ export async function searchYouTube(query: string) {
 
 // Version History - Update user attribution
 export async function updateVersionUser(versionId: string, user: string) {
-  const version = await prisma.version.update({
-    where: { id: versionId },
-    data: { user },
-    include: {
-      song: {
-        select: { albumId: true },
-      },
-    },
-  });
+  const version = await storage.updateVersionUser(versionId, user);
+  if (!version) return null;
 
-  revalidatePath(`/album/${version.song.albumId}`);
+  const song = await storage.getSongById(version.songId);
+  if (song) {
+    revalidatePath(`/album/${song.albumId}`);
+  }
+
   return version;
 }
 
 // Version History - Restore to previous version
 export async function restoreSongVersion(songId: string, versionId: string) {
-  const version = await prisma.version.findUnique({
-    where: { id: versionId },
-  });
+  const song = await storage.restoreSongFromVersion(songId, versionId);
+  if (!song) return null;
 
-  if (!version || !version.snapshot) {
-    throw new Error("Version not found or no snapshot available");
-  }
+  const [files, references, comments, versions] = await Promise.all([
+    storage.getFilesBySongId(song.id),
+    storage.getReferencesBySongId(song.id),
+    storage.getCommentsBySongId(song.id),
+    storage.getVersionsBySongId(song.id),
+  ]);
 
-  const snapshot = JSON.parse(version.snapshot);
+  const album = await storage.getAlbumById(song.albumId);
+  revalidatePath(`/album/${song.albumId}`);
 
-  const song = await prisma.song.update({
-    where: { id: songId },
-    data: {
-      title: snapshot.title,
-      lyrics: snapshot.lyrics,
-      notes: snapshot.notes,
-      progress: snapshot.progress,
-      versions: {
-        create: {
-          changes: "Restored from version history",
-          comment: `Restored to ${new Date(version.createdAt).toLocaleString()}`,
-          user: "System",
-          snapshot: JSON.stringify(snapshot),
-        },
-      },
-    },
-    include: {
-      album: true,
-      files: true,
-      references: true,
-      comments: true,
-      versions: {
-        orderBy: {
-          createdAt: "desc",
-        },
-      },
-    },
-  });
-
-  const albumId = song.albumId;
-  await prisma.album.update({
-    where: { id: albumId },
-    data: { updatedAt: new Date() },
-  });
-
-  revalidatePath(`/album/${albumId}`);
-  return song;
+  return {
+    ...song,
+    album,
+    files,
+    references,
+    comments,
+    versions,
+  };
 }
 
 // Reorder songs
 export async function reorderSongs(albumId: string, songIds: string[]) {
-  // Update the order field for each song based on its position in the array
-  await Promise.all(
-    songIds.map((songId, index) =>
-      prisma.song.update({
-        where: { id: songId },
-        data: { order: index },
-      })
-    )
-  );
-
-  await prisma.album.update({
-    where: { id: albumId },
-    data: { updatedAt: new Date() },
-  });
-
+  await storage.reorderSongs(albumId, songIds);
   revalidatePath(`/album/${albumId}`);
 }

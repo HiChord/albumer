@@ -1,0 +1,81 @@
+[
+  {
+    "id": "1761627988552_kyszcz8ao",
+    "changes": "Song created",
+    "comment": "Initial creation",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:06:28.552Z"
+  },
+  {
+    "id": "1761628121737_yz6genbt1",
+    "changes": "Uploaded audio file",
+    "comment": "Vampire [Test].mp3",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:08:41.737Z"
+  },
+  {
+    "id": "1761628140409_7na9y1d1f",
+    "changes": "Updated title",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:00.409Z",
+    "snapshot": "{\"title\":\"Untitled\",\"lyrics\":\"\",\"notes\":\"\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:00.408Z\"}"
+  },
+  {
+    "id": "1761628146038_uo9m4vjin",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:06.038Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:06.037Z\"}"
+  },
+  {
+    "id": "1761628149804_eb9lawtw9",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:09.804Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:09.803Z\"}"
+  },
+  {
+    "id": "1761628151462_i4s5jsve2",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:11.462Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:11.461Z\"}"
+  },
+  {
+    "id": "1761628164978_qo2etdl1a",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:24.978Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\\n\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:24.977Z\"}"
+  },
+  {
+    "id": "1761628173319_pnxyl2hur",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:33.319Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:33.319Z\"}"
+  },
+  {
+    "id": "1761628176347_3d9kbzt7m",
+    "changes": "Updated notes",
+    "comment": "",
+    "user": "User",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:09:36.347Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\\n\\n\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:36.347Z\"}"
+  }
+]

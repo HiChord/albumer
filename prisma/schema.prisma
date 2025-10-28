@@ -1,10 +1,9 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -43,6 +42,7 @@ model File {
   name      String
   type      String   // "logic" or "audio"
   url       String   // URL to file in cloud storage
+  externalId String? @map("external_id") // Cloud provider file ID for management
   mimeType  String
   size      Int
   songId    String

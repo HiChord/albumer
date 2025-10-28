@@ -36,9 +36,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# prisma
+# prisma (legacy - no longer used)
 /prisma/*.db
 /prisma/*.db-journal
 
-# uploads
-/public/uploads
+# NOTE: /data and /uploads folders ARE tracked by git
+# data/ contains JSON files (tracked normally)
+# uploads/ contains large files (tracked with Git LFS)

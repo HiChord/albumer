@@ -125,17 +125,24 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         body: formData,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        await addFile(songId, {
-          name: data.name,
-          type: type,
-          url: data.url,
-          mimeType: file.type,
-          size: file.size,
-        });
-        await loadAlbum();
+      if (!response.ok) {
+        throw new Error("Upload failed");
       }
+
+      const data = await response.json();
+      if (!data.file) {
+        throw new Error("Upload response missing file");
+      }
+
+      await addFile(songId, {
+        name: data.file.name,
+        type,
+        url: data.file.url,
+        mimeType: data.file.mimeType ?? file.type,
+        size: data.file.size ?? file.size,
+        externalId: data.file.externalId ?? undefined,
+      });
+      await loadAlbum();
     } catch (error) {
       console.error("Upload failed:", error);
     }

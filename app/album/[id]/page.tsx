@@ -32,6 +32,7 @@ import {
 import VersionHistory from "@/components/VersionHistory";
 import ListenMode from "@/components/ListenMode";
 import FileUpload from "@/components/FileUpload";
+import WaveformPlayer from "@/components/WaveformPlayer";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -141,7 +142,44 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const handleAddReference = async (songId: string, ref: any) => {
     await addReference(songId, {
       type: refSearchType,
+      user: currentUser,
       ...ref
+    });
+    await loadAlbum();
+    setShowRefSearch(null);
+    setRefSearchQuery("");
+    setRefSearchResults([]);
+  };
+
+  const handleAddYouTubeUrl = async (songId: string, url: string) => {
+    // Extract video ID from YouTube URL
+    let videoId = "";
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+      /youtube\.com\/embed\/([^&\s]+)/,
+      /youtube\.com\/v\/([^&\s]+)/
+    ];
+
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        videoId = match[1];
+        break;
+      }
+    }
+
+    if (!videoId) {
+      alert("Invalid YouTube URL");
+      return;
+    }
+
+    await addReference(songId, {
+      type: "youtube",
+      title: "YouTube Video",
+      artist: "",
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      thumbnail: `https://img.youtube.com/vi/${videoId}/default.jpg`,
+      user: currentUser,
     });
     await loadAlbum();
     setShowRefSearch(null);
@@ -487,6 +525,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           url: file.url,
                           mimeType: file.mimeType,
                           size: file.size,
+                          externalId: file.externalId ?? undefined,
                         });
                         await loadAlbum();
                       }}
@@ -508,6 +547,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           url: file.url,
                           mimeType: file.mimeType,
                           size: file.size,
+                          externalId: file.externalId ?? undefined,
                         });
                         await loadAlbum();
                       }}
@@ -531,7 +571,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 {/* Audio Player */}
                 {playingSong === song.id && getAudioFile(song) && (
                   <div className="px-8 py-4 border-b" style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
-                    <audio src={getAudioFile(song).url} controls className="w-full" autoPlay />
+                    <WaveformPlayer
+                      url={getAudioFile(song).url}
+                      filename={getAudioFile(song).name}
+                    />
                   </div>
                 )}
 
@@ -539,9 +582,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <div className="grid grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
                   {/* Notes */}
                   <div className="p-6" style={{ background: 'var(--background)' }}>
-                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
-                      Notes
-                    </label>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light">
+                        Notes
+                      </label>
+                      {song.notesUser && (
+                        <span className="text-[10px] opacity-40">
+                          {song.notesUser}
+                        </span>
+                      )}
+                    </div>
                     <textarea
                       value={getValue(song.id, "notes", song.notes)}
                       onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
@@ -553,9 +603,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                   {/* Lyrics */}
                   <div className="p-6" style={{ background: 'var(--background)' }}>
-                    <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
-                      Lyrics
-                    </label>
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light">
+                        Lyrics
+                      </label>
+                      {song.lyricsUser && (
+                        <span className="text-[10px] opacity-40">
+                          {song.lyricsUser}
+                        </span>
+                      )}
+                    </div>
                     <textarea
                       value={getValue(song.id, "lyrics", song.lyrics)}
                       onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
@@ -581,7 +638,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           )}
                           <div className="min-w-0 flex-1">
                             <div className="text-xs font-light truncate opacity-80">{ref.title}</div>
-                            <div className="text-xs opacity-40 truncate">{ref.artist}</div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs opacity-40 truncate">{ref.artist}</div>
+                              {ref.user && (
+                                <span className="text-[10px] opacity-30">• {ref.user}</span>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2 opacity-0 group-hover/ref:opacity-60">
                             <a
@@ -630,11 +692,18 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                               type="text"
                               value={refSearchQuery}
                               onChange={(e) => setRefSearchQuery(e.target.value)}
-                              placeholder="Search..."
+                              placeholder={refSearchType === "youtube" ? "Paste YouTube URL or search..." : "Search..."}
                               className="flex-1 px-3 py-1.5 text-xs font-light border-b bg-transparent focus:outline-none"
                               style={{ borderColor: 'var(--border)' }}
                               onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSearchReferences();
+                                if (e.key === "Enter") {
+                                  // If it looks like a YouTube URL, add it directly
+                                  if (refSearchType === "youtube" && (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be"))) {
+                                    handleAddYouTubeUrl(song.id, refSearchQuery);
+                                  } else {
+                                    handleSearchReferences();
+                                  }
+                                }
                                 if (e.key === "Escape") {
                                   setShowRefSearch(null);
                                   setRefSearchQuery("");
@@ -643,7 +712,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                               }}
                             />
                             <button
-                              onClick={handleSearchReferences}
+                              onClick={() => {
+                                // If it looks like a YouTube URL, add it directly
+                                if (refSearchType === "youtube" && (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be"))) {
+                                  handleAddYouTubeUrl(song.id, refSearchQuery);
+                                } else {
+                                  handleSearchReferences();
+                                }
+                              }}
                               disabled={searchingRefs}
                               className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100"
                             >
