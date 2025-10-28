@@ -77,5 +77,14 @@
     "songId": "1761627988551_zohgh2nom",
     "createdAt": "2025-10-28T05:09:36.347Z",
     "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\\n\\n\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:09:36.347Z\"}"
+  },
+  {
+    "id": "1761628796945_sytez70a6",
+    "changes": "Updated progress",
+    "comment": "",
+    "user": "Andy",
+    "songId": "1761627988551_zohgh2nom",
+    "createdAt": "2025-10-28T05:19:56.945Z",
+    "snapshot": "{\"title\":\"Vampire\",\"lyrics\":\"\",\"notes\":\"Test\\n\\n\",\"progress\":\"Not Started\",\"timestamp\":\"2025-10-28T05:19:56.944Z\"}"
   }
 ]
