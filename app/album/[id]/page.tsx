@@ -11,7 +11,9 @@ import {
   ExternalLink,
   Youtube,
   Trash2,
-  Headphones
+  Headphones,
+  Download,
+  Upload as UploadIcon
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -498,21 +500,50 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Logic File
                     </div>
-                    <FileUpload
-                      label="Upload"
-                      accept=".logicx,.logic"
-                      onUploadComplete={async (file) => {
-                        await addFile(song.id, {
-                          name: file.name,
-                          type: "logic",
-                          url: file.url,
-                          mimeType: file.mimeType,
-                          size: file.size,
-                          externalId: file.externalId ?? undefined,
-                        });
-                        await loadAlbum();
-                      }}
-                    />
+                    {getLogicFile(song) ? (
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={getLogicFile(song).url}
+                          download={getLogicFile(song).name}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                          style={{ background: 'var(--accent)', color: 'white' }}
+                        >
+                          <Download className="w-3 h-3" />
+                          Download
+                        </a>
+                        <FileUpload
+                          label="Replace"
+                          accept=".logicx,.logic"
+                          onUploadComplete={async (file) => {
+                            await addFile(song.id, {
+                              name: file.name,
+                              type: "logic",
+                              url: file.url,
+                              mimeType: file.mimeType,
+                              size: file.size,
+                              externalId: file.externalId ?? undefined,
+                            });
+                            await loadAlbum();
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <FileUpload
+                        label="Upload"
+                        accept=".logicx,.logic"
+                        onUploadComplete={async (file) => {
+                          await addFile(song.id, {
+                            name: file.name,
+                            type: "logic",
+                            url: file.url,
+                            mimeType: file.mimeType,
+                            size: file.size,
+                            externalId: file.externalId ?? undefined,
+                          });
+                          await loadAlbum();
+                        }}
+                      />
+                    )}
                   </div>
 
                   {/* Audio Bounce */}
@@ -520,21 +551,50 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Audio Bounce
                     </div>
-                    <FileUpload
-                      label="Upload"
-                      accept="audio/*"
-                      onUploadComplete={async (file) => {
-                        await addFile(song.id, {
-                          name: file.name,
-                          type: "audio",
-                          url: file.url,
-                          mimeType: file.mimeType,
-                          size: file.size,
-                          externalId: file.externalId ?? undefined,
-                        });
-                        await loadAlbum();
-                      }}
-                    />
+                    {getAudioFile(song) ? (
+                      <div className="flex flex-col gap-1">
+                        <a
+                          href={getAudioFile(song).url}
+                          download={getAudioFile(song).name}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                          style={{ background: 'var(--accent)', color: 'white' }}
+                        >
+                          <Download className="w-3 h-3" />
+                          Download
+                        </a>
+                        <FileUpload
+                          label="Replace"
+                          accept="audio/*"
+                          onUploadComplete={async (file) => {
+                            await addFile(song.id, {
+                              name: file.name,
+                              type: "audio",
+                              url: file.url,
+                              mimeType: file.mimeType,
+                              size: file.size,
+                              externalId: file.externalId ?? undefined,
+                            });
+                            await loadAlbum();
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <FileUpload
+                        label="Upload"
+                        accept="audio/*"
+                        onUploadComplete={async (file) => {
+                          await addFile(song.id, {
+                            name: file.name,
+                            type: "audio",
+                            url: file.url,
+                            mimeType: file.mimeType,
+                            size: file.size,
+                            externalId: file.externalId ?? undefined,
+                          });
+                          await loadAlbum();
+                        }}
+                      />
+                    )}
                   </div>
 
                   {/* Version History */}
