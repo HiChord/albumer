@@ -16,11 +16,13 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    // Generate unique filename
+    // Generate unique filename - sanitize to remove invalid characters
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
     const ext = file.name.split('.').pop();
-    const basename = file.name.replace(`.${ext}`, '');
+    const basename = file.name
+      .replace(`.${ext}`, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_'); // Remove invalid characters
     const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
 
     // Upload file to Supabase Storage
