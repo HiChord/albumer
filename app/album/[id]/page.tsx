@@ -537,7 +537,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
       {/* Minimal Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
-        <div className="max-w-[2000px] mx-auto px-8 py-6">
+        <div className="max-w-[2000px] mx-auto px-8 py-6 pr-48">
           <div className="grid grid-cols-3 items-center gap-8">
             {/* Left: Back */}
             <div className="flex items-center gap-4">
