@@ -903,41 +903,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       {/* Add Reference */}
                       {showRefSearch === song.id ? (
                         <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
-                          <div className="flex gap-2 mb-3">
-                            <button
-                              onClick={() => {
-                                setRefSearchType("spotify");
-                                setRefSearchResults([]);
-                              }}
-                              className={`text-xs uppercase tracking-wider font-light px-3 py-1 transition-opacity ${refSearchType === "spotify" ? 'opacity-100' : 'opacity-30'}`}
-                            >
-                              Spotify
-                            </button>
-                            <button
-                              onClick={() => {
-                                setRefSearchType("youtube");
-                                setRefSearchResults([]);
-                              }}
-                              className={`text-xs uppercase tracking-wider font-light px-3 py-1 transition-opacity ${refSearchType === "youtube" ? 'opacity-100' : 'opacity-30'}`}
-                            >
-                              YouTube
-                            </button>
+                          <div className="mb-2 text-xs opacity-30 uppercase tracking-wider">
+                            Paste YouTube URL
                           </div>
                           <div className="flex gap-2 mb-3">
                             <input
                               type="text"
                               value={refSearchQuery}
                               onChange={(e) => setRefSearchQuery(e.target.value)}
-                              placeholder={refSearchType === "youtube" ? "Paste YouTube URL or search..." : "Search..."}
+                              placeholder="https://www.youtube.com/watch?v=..."
                               className="flex-1 px-3 py-1.5 text-xs font-light border-b bg-transparent focus:outline-none"
                               style={{ borderColor: 'var(--border)' }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                  // If it looks like a YouTube URL, add it directly
-                                  if (refSearchType === "youtube" && (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be"))) {
+                                  if (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be")) {
                                     handleAddYouTubeUrl(song.id, refSearchQuery);
-                                  } else {
-                                    handleSearchReferences();
                                   }
                                 }
                                 if (e.key === "Escape") {
@@ -949,50 +929,15 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             />
                             <button
                               onClick={() => {
-                                // If it looks like a YouTube URL, add it directly
-                                if (refSearchType === "youtube" && (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be"))) {
+                                if (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be")) {
                                   handleAddYouTubeUrl(song.id, refSearchQuery);
-                                } else {
-                                  handleSearchReferences();
                                 }
                               }}
-                              disabled={searchingRefs}
                               className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100"
                             >
-                              {searchingRefs ? <Loader2 className="w-3 h-3 animate-spin" /> : "Go"}
+                              Add
                             </button>
                           </div>
-
-                          {refSearchResults.length > 0 ? (
-                            <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
-                              {refSearchResults.map((result, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex items-center gap-3 py-1 group/result"
-                                >
-                                  {result.thumbnail && (
-                                    <img src={result.thumbnail} alt={result.title} className="w-6 h-6 object-cover opacity-60" />
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs font-light truncate">{result.title}</div>
-                                    <div className="text-xs opacity-40 truncate">{result.artist}</div>
-                                  </div>
-                                  <button
-                                    onClick={() => handleAddReference(song.id, result)}
-                                    className="text-xs uppercase tracking-wider font-light opacity-0 group-hover/result:opacity-60 hover:opacity-100 transition-opacity"
-                                  >
-                                    Add
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : searchingRefs ? null : refSearchQuery && refSearchResults.length === 0 ? (
-                            <div className="mb-3 py-2 text-xs opacity-40">
-                              {refSearchType === "youtube"
-                                ? "No results. Try pasting a YouTube URL instead."
-                                : "No results found. Check your search."}
-                            </div>
-                          ) : null}
 
                           <button
                             onClick={() => {
