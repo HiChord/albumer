@@ -39,6 +39,7 @@ import FileUpload from "@/components/FileUpload";
 import WaveformPlayer from "@/components/WaveformPlayer";
 import DragDropOverlay from "@/components/DragDropOverlay";
 import FileAssignmentModal from "@/components/FileAssignmentModal";
+import FileManager from "@/components/FileManager";
 import { useUser } from "@/lib/UserContext";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
@@ -65,6 +66,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [isDraggingFiles, setIsDraggingFiles] = useState(false);
   const [droppedFiles, setDroppedFiles] = useState<Array<{ file: File; type: "audio" | "logic" }> | null>(null);
   const [dragOverSongId, setDragOverSongId] = useState<string | null>(null);
+  const [fileManagerOpen, setFileManagerOpen] = useState<{ songId: string; type: "audio" | "logic"; songTitle: string } | null>(null);
 
   useEffect(() => {
     loadAlbum();
@@ -134,7 +136,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         delete newValues[key];
         return newValues;
       });
-      await loadAlbum();
+      // Don't reload the entire album to avoid interrupting playback
+      // await loadAlbum();
     }, 500); // Wait 500ms after user stops typing
   };
 
@@ -148,12 +151,23 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     if (!refSearchQuery.trim()) return;
 
     setSearchingRefs(true);
-    if (refSearchType === "spotify") {
-      const results = await searchSpotify(refSearchQuery);
-      setRefSearchResults(results.tracks || []);
-    } else {
-      const results = await searchYouTube(refSearchQuery);
-      setRefSearchResults(results.videos || []);
+    try {
+      if (refSearchType === "spotify") {
+        const results = await searchSpotify(refSearchQuery);
+        if (results.tracks && results.tracks.length === 0) {
+          alert("No results found. Spotify API may not be configured.");
+        }
+        setRefSearchResults(results.tracks || []);
+      } else {
+        const results = await searchYouTube(refSearchQuery);
+        if (results.videos && results.videos.length === 0) {
+          alert("No results found. YouTube API may not be configured. Try pasting a YouTube URL directly instead.");
+        }
+        setRefSearchResults(results.videos || []);
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      alert("Search failed. API may not be configured. For YouTube, try pasting the URL directly.");
     }
     setSearchingRefs(false);
   };
@@ -448,6 +462,21 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     await loadAlbum();
   };
 
+  const handleFileManagerUpload = async (songId: string, type: "audio" | "logic", files: any[]) => {
+    for (const file of files) {
+      await addFile(songId, {
+        name: file.name,
+        type,
+        url: file.url,
+        mimeType: file.mimeType,
+        size: file.size,
+        externalId: file.externalId ?? undefined,
+      });
+    }
+    setFileManagerOpen(null);
+    await loadAlbum();
+  };
+
   const themeClass = `theme-${currentUser.toLowerCase()}`;
 
   if (loading || !album) {
@@ -476,6 +505,22 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           songs={album.songs.map((s: any) => ({ id: s.id, title: s.title }))}
           onAssign={handleFileAssignment}
           onClose={() => setDroppedFiles(null)}
+        />
+      )}
+
+      {/* File Manager Modal */}
+      {fileManagerOpen && (
+        <FileManager
+          songId={fileManagerOpen.songId}
+          songTitle={fileManagerOpen.songTitle}
+          type={fileManagerOpen.type}
+          files={
+            album.songs
+              .find((s: any) => s.id === fileManagerOpen.songId)
+              ?.files.filter((f: any) => f.type === fileManagerOpen.type) || []
+          }
+          onUpload={(files) => handleFileManagerUpload(fileManagerOpen.songId, fileManagerOpen.type, files)}
+          onClose={() => setFileManagerOpen(null)}
         />
       )}
 
@@ -698,50 +743,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Logic File
                     </div>
-                    {getLogicFile(song) ? (
-                      <div className="flex flex-col gap-1">
-                        <a
-                          href={getLogicFile(song).url}
-                          download={getLogicFile(song).name}
-                          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
-                          style={{ background: 'var(--accent)', color: 'white' }}
-                        >
-                          <Download className="w-3 h-3" />
-                          Download
-                        </a>
-                        <FileUpload
-                          label="Replace"
-                          accept=".logicx,.logic"
-                          onUploadComplete={async (file) => {
-                            await addFile(song.id, {
-                              name: file.name,
-                              type: "logic",
-                              url: file.url,
-                              mimeType: file.mimeType,
-                              size: file.size,
-                              externalId: file.externalId ?? undefined,
-                            });
-                            await loadAlbum();
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <FileUpload
-                        label="Upload"
-                        accept=".logicx,.logic"
-                        onUploadComplete={async (file) => {
-                          await addFile(song.id, {
-                            name: file.name,
-                            type: "logic",
-                            url: file.url,
-                            mimeType: file.mimeType,
-                            size: file.size,
-                            externalId: file.externalId ?? undefined,
-                          });
-                          await loadAlbum();
-                        }}
-                      />
-                    )}
+                    <button
+                      onClick={() => setFileManagerOpen({ songId: song.id, type: "logic", songTitle: song.title })}
+                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                      style={{ background: getLogicFile(song) ? 'var(--accent)' : 'var(--border)', color: getLogicFile(song) ? 'white' : 'var(--foreground)' }}
+                    >
+                      {getLogicFile(song) ? `${song.files.filter((f: any) => f.type === "logic").length} Files` : 'Upload'}
+                    </button>
                   </div>
 
                   {/* Audio Bounce */}
@@ -749,50 +757,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
                       Audio Bounce
                     </div>
-                    {getAudioFile(song) ? (
-                      <div className="flex flex-col gap-1">
-                        <a
-                          href={getAudioFile(song).url}
-                          download={getAudioFile(song).name}
-                          className="flex items-center justify-center gap-1 px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
-                          style={{ background: 'var(--accent)', color: 'white' }}
-                        >
-                          <Download className="w-3 h-3" />
-                          Download
-                        </a>
-                        <FileUpload
-                          label="Replace"
-                          accept="audio/*"
-                          onUploadComplete={async (file) => {
-                            await addFile(song.id, {
-                              name: file.name,
-                              type: "audio",
-                              url: file.url,
-                              mimeType: file.mimeType,
-                              size: file.size,
-                              externalId: file.externalId ?? undefined,
-                            });
-                            await loadAlbum();
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <FileUpload
-                        label="Upload"
-                        accept="audio/*"
-                        onUploadComplete={async (file) => {
-                          await addFile(song.id, {
-                            name: file.name,
-                            type: "audio",
-                            url: file.url,
-                            mimeType: file.mimeType,
-                            size: file.size,
-                            externalId: file.externalId ?? undefined,
-                          });
-                          await loadAlbum();
-                        }}
-                      />
-                    )}
+                    <button
+                      onClick={() => setFileManagerOpen({ songId: song.id, type: "audio", songTitle: song.title })}
+                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                      style={{ background: getAudioFile(song) ? 'var(--accent)' : 'var(--border)', color: getAudioFile(song) ? 'white' : 'var(--foreground)' }}
+                    >
+                      {getAudioFile(song) ? `${song.files.filter((f: any) => f.type === "audio").length} Files` : 'Upload'}
+                    </button>
                   </div>
 
                   {/* Version History */}
@@ -823,16 +794,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <div className="grid grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
                   {/* Notes */}
                   <div className="p-6" style={{ background: 'var(--background)' }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light">
-                        Notes
-                      </label>
-                      {song.notesUser && (
-                        <span className="text-[10px] opacity-40">
-                          {song.notesUser}
-                        </span>
-                      )}
-                    </div>
+                    <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light mb-4">
+                      Notes
+                    </label>
                     <textarea
                       value={getValue(song.id, "notes", song.notes)}
                       onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
@@ -844,16 +808,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                   {/* Lyrics */}
                   <div className="p-6" style={{ background: 'var(--background)' }}>
-                    <div className="flex items-center justify-between mb-4">
-                      <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light">
-                        Lyrics
-                      </label>
-                      {song.lyricsUser && (
-                        <span className="text-[10px] opacity-40">
-                          {song.lyricsUser}
-                        </span>
-                      )}
-                    </div>
+                    <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light mb-4">
+                      Lyrics
+                    </label>
                     <textarea
                       value={getValue(song.id, "lyrics", song.lyrics)}
                       onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
