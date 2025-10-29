@@ -53,6 +53,13 @@ export default function MultiFileUpload({
     setIsUploading(true);
     const uploadedFiles: any[] = [];
 
+    // Dynamic import to avoid SSR issues
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     for (let i = 0; i < files.length; i++) {
       const fileData = files[i];
       if (fileData.status === "success") continue;
@@ -65,19 +72,32 @@ export default function MultiFileUpload({
           )
         );
 
-        const formData = new FormData();
-        formData.append("file", fileData.file);
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const ext = fileData.file.name.split('.').pop();
+        const basename = fileData.file.name
+          .replace(`.${ext}`, '')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
 
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+        // Upload directly to Supabase Storage (client-side)
+        const bytes = await fileData.file.arrayBuffer();
+        const { data, error } = await supabase.storage
+          .from("Audio-files")
+          .upload(uniqueFilename, bytes, {
+            contentType: fileData.file.type,
+            upsert: false,
+          });
 
-        const data = await response.json();
-
-        if (!response.ok || !data.file) {
-          throw new Error(data.error || "Upload failed");
+        if (error) {
+          throw new Error(error.message);
         }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from("Audio-files")
+          .getPublicUrl(uniqueFilename);
 
         // Update status to success
         setFiles((prev) =>
@@ -87,13 +107,19 @@ export default function MultiFileUpload({
                   ...f,
                   status: "success" as const,
                   progress: 100,
-                  url: data.file.url,
+                  url: urlData.publicUrl,
                 }
               : f
           )
         );
 
-        uploadedFiles.push(data.file);
+        uploadedFiles.push({
+          name: fileData.file.name,
+          url: urlData.publicUrl,
+          size: fileData.file.size,
+          mimeType: fileData.file.type,
+          externalId: uniqueFilename,
+        });
       } catch (err: any) {
         console.error("Upload error:", err);
         setFiles((prev) =>

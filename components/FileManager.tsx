@@ -62,6 +62,13 @@ export default function FileManager({
     setIsUploading(true);
     const uploadedFiles: any[] = [];
 
+    // Dynamic import to avoid SSR issues
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       const fileKey = `${file.name}-${i}`;
@@ -69,22 +76,41 @@ export default function FileManager({
       try {
         setUploadProgress(prev => ({ ...prev, [fileKey]: 0 }));
 
-        const formData = new FormData();
-        formData.append("file", file);
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const ext = file.name.split('.').pop();
+        const basename = file.name
+          .replace(`.${ext}`, '')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
 
-        const response = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
+        // Upload directly to Supabase Storage (client-side)
+        const bytes = await file.arrayBuffer();
+        const { data, error } = await supabase.storage
+          .from("Audio-files")
+          .upload(uniqueFilename, bytes, {
+            contentType: file.type,
+            upsert: false,
+          });
 
-        const data = await response.json();
-
-        if (!response.ok || !data.file) {
-          throw new Error(data.error || "Upload failed");
+        if (error) {
+          throw new Error(error.message);
         }
 
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from("Audio-files")
+          .getPublicUrl(uniqueFilename);
+
         setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
-        uploadedFiles.push(data.file);
+        uploadedFiles.push({
+          name: file.name,
+          url: urlData.publicUrl,
+          size: file.size,
+          mimeType: file.type,
+          externalId: uniqueFilename,
+        });
       } catch (err: any) {
         console.error("Upload error:", err);
         alert(`Failed to upload ${file.name}: ${err.message}`);
