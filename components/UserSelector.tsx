@@ -8,11 +8,12 @@ export default function UserSelector() {
   const users = ["Dev", "Khal", "Andy"] as const;
 
   return (
-    <div className="fixed top-6 right-6 z-50">
+    <div className="fixed top-6 right-6 z-[100]">
       <div className="flex items-center gap-3 px-4 py-2 rounded-full backdrop-blur-sm"
         style={{
-          background: 'rgba(30, 30, 30, 0.8)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(30, 30, 30, 0.95)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
         }}
       >
         <User className="w-4 h-4 opacity-40" />

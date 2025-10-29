@@ -71,13 +71,17 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   useEffect(() => {
     loadAlbum();
 
-    // Auto-refresh every 10 seconds
+    // Auto-refresh every 30 seconds, but only if not editing or playing
     const interval = setInterval(() => {
-      loadAlbum();
-    }, 10000);
+      // Don't refresh if user is editing (has typing debounce active) or if audio is playing
+      const hasActiveEdits = Object.keys(editingValues).length > 0;
+      if (!hasActiveEdits && !playingSong) {
+        loadAlbum();
+      }
+    }, 30000); // Increased to 30 seconds
 
     return () => clearInterval(interval);
-  }, [resolvedParams.id]);
+  }, [resolvedParams.id, editingValues, playingSong]);
 
   const loadAlbum = async () => {
     setLoading(true);
@@ -129,16 +133,29 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     }
 
     debounceTimers.current[key] = setTimeout(async () => {
-      await updateSong(songId, { [field]: value, user: currentUser });
-      // Remove from editing values after save
-      setEditingValues(prev => {
-        const newValues = { ...prev };
-        delete newValues[key];
-        return newValues;
-      });
-      // Don't reload the entire album to avoid interrupting playback
-      // await loadAlbum();
-    }, 500); // Wait 500ms after user stops typing
+      try {
+        await updateSong(songId, { [field]: value, user: currentUser });
+        // Update the album state directly without full reload
+        setAlbum((prevAlbum: any) => {
+          if (!prevAlbum) return prevAlbum;
+          return {
+            ...prevAlbum,
+            songs: prevAlbum.songs.map((s: any) =>
+              s.id === songId ? { ...s, [field]: value } : s
+            ),
+          };
+        });
+        // Remove from editing values after save
+        setEditingValues(prev => {
+          const newValues = { ...prev };
+          delete newValues[key];
+          return newValues;
+        });
+      } catch (error) {
+        console.error("Error saving:", error);
+        // Keep the editing value if save failed
+      }
+    }, 1000); // Increased to 1 second for better stability
   };
 
   // Helper to get the current value (from editing state or song)
@@ -154,20 +171,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     try {
       if (refSearchType === "spotify") {
         const results = await searchSpotify(refSearchQuery);
-        if (results.tracks && results.tracks.length === 0) {
-          alert("No results found. Spotify API may not be configured.");
-        }
         setRefSearchResults(results.tracks || []);
       } else {
         const results = await searchYouTube(refSearchQuery);
-        if (results.videos && results.videos.length === 0) {
-          alert("No results found. YouTube API may not be configured. Try pasting a YouTube URL directly instead.");
-        }
         setRefSearchResults(results.videos || []);
       }
     } catch (error) {
       console.error("Search error:", error);
-      alert("Search failed. API may not be configured. For YouTube, try pasting the URL directly.");
+      setRefSearchResults([]);
     }
     setSearchingRefs(false);
   };
@@ -730,6 +741,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.opacity = '0.6'; }}
                     >
                       <option>Not Started</option>
+                      <option>Voice Memo</option>
                       <option>In Progress</option>
                       <option>Recording</option>
                       <option>Mixing</option>
@@ -925,7 +937,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             </button>
                           </div>
 
-                          {refSearchResults.length > 0 && (
+                          {refSearchResults.length > 0 ? (
                             <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
                               {refSearchResults.map((result, idx) => (
                                 <div
@@ -948,7 +960,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 </div>
                               ))}
                             </div>
-                          )}
+                          ) : searchingRefs ? null : refSearchQuery && refSearchResults.length === 0 ? (
+                            <div className="mb-3 py-2 text-xs opacity-40">
+                              {refSearchType === "youtube"
+                                ? "No results. Try pasting a YouTube URL instead."
+                                : "No results found. Check your search."}
+                            </div>
+                          ) : null}
 
                           <button
                             onClick={() => {
