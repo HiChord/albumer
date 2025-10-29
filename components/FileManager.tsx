@@ -36,6 +36,16 @@ export default function FileManager({
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Force a direct file input trigger
+  const triggerFileInput = () => {
+    const input = fileInputRef.current;
+    if (!input) {
+      alert("File input not found!");
+      return;
+    }
+    input.click();
+  };
+
   const formatFileSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -58,9 +68,19 @@ export default function FileManager({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    if (selectedFiles.length === 0) return;
+    console.log("=== handleFileSelect CALLED ===");
+    console.log("Event:", e);
+    console.log("Files:", e.target.files);
 
+    const selectedFiles = Array.from(e.target.files || []);
+    console.log("Selected files array:", selectedFiles);
+
+    if (selectedFiles.length === 0) {
+      console.log("No files selected, aborting");
+      return;
+    }
+
+    console.log(`Starting upload of ${selectedFiles.length} files for type: ${type}`);
     setIsUploading(true);
     const uploadedFiles: any[] = [];
 
@@ -71,12 +91,15 @@ export default function FileManager({
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
-    for (let i = 0; i < selectedFiles.length; i++) {
+    const totalFiles = selectedFiles.length;
+
+    for (let i = 0; i < totalFiles; i++) {
       const file = selectedFiles[i];
       const fileKey = `${file.name}-${i}`;
 
       try {
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 0 }));
+        // Show initial progress
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 10 }));
 
         // Generate unique filename
         const timestamp = Date.now();
@@ -87,22 +110,38 @@ export default function FileManager({
           .replace(/[^a-zA-Z0-9_-]/g, '_');
         const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
 
-        // Upload directly to Supabase Storage (client-side)
+        // Determine bucket based on type prop
+        const bucketName = type === "logic" ? "Logic-files" : "Audio-files";
+
+        console.log(`Uploading ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB) to ${bucketName} bucket`);
+
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 25 }));
+
+        // Convert to bytes
         const bytes = await file.arrayBuffer();
-        const { data, error } = await supabase.storage
-          .from("Audio-files")
+
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 50 }));
+
+        // Upload to Supabase Storage
+        const { data, error} = await supabase.storage
+          .from(bucketName)
           .upload(uniqueFilename, bytes, {
-            contentType: file.type,
+            contentType: file.type || 'application/octet-stream',
             upsert: false,
           });
 
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
+
         if (error) {
+          console.error("Supabase upload error:", error);
           throw new Error(error.message);
         }
 
+        console.log(`Upload successful! File: ${uniqueFilename}`);
+
         // Get public URL
         const { data: urlData } = supabase.storage
-          .from("Audio-files")
+          .from(bucketName)
           .getPublicUrl(uniqueFilename);
 
         setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
@@ -110,12 +149,22 @@ export default function FileManager({
           name: file.name,
           url: urlData.publicUrl,
           size: file.size,
-          mimeType: file.type,
+          mimeType: file.type || 'application/octet-stream',
           externalId: uniqueFilename,
         });
       } catch (err: any) {
         console.error("Upload error:", err);
-        alert(`Failed to upload ${file.name}: ${err.message}`);
+        const errorMsg = err.message.includes("exceeded the maximum")
+          ? `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please increase the upload limit in Supabase Storage settings.`
+          : err.message;
+        alert(`Failed to upload ${file.name}: ${errorMsg}`);
+
+        // Remove progress for failed file
+        setUploadProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[fileKey];
+          return newProgress;
+        });
       }
     }
 
@@ -184,7 +233,14 @@ export default function FileManager({
                 {type === "audio" ? <FileAudio className="w-16 h-16" /> : <FileIcon className="w-16 h-16" />}
               </div>
               <p className="text-sm opacity-40">No {type} files uploaded yet</p>
-              <p className="text-xs opacity-30 mt-2">Click &quot;Upload New File&quot; to add files</p>
+              {type === "logic" ? (
+                <p className="text-xs opacity-30 mt-2">
+                  Compress your .logicx file first (right-click → Compress),<br />
+                  then upload the .zip file
+                </p>
+              ) : (
+                <p className="text-xs opacity-30 mt-2">Click &quot;Upload New File&quot; to add files</p>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
@@ -261,26 +317,52 @@ export default function FileManager({
             >
               Close
             </button>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="flex items-center gap-2 px-6 py-2 text-sm font-light text-white transition-opacity disabled:opacity-50"
-              style={{ background: "var(--accent)" }}
-              onMouseEnter={(e) => !isUploading && (e.currentTarget.style.opacity = "0.8")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              <Upload className="w-4 h-4" />
-              {isUploading ? "Uploading..." : "Upload New File"}
-            </button>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor={`file-input-${type}`}
+                className={`flex items-center gap-2 px-6 py-2 text-sm font-light text-white transition-opacity cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ background: "var(--accent)" }}
+                onMouseEnter={(e) => !isUploading && (e.currentTarget.style.opacity = "0.8")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                <Upload className="w-4 h-4" />
+                {isUploading ? "Uploading..." : "Upload New File"}
+              </label>
+              {isUploading && Object.keys(uploadProgress).length > 0 && (
+                <div className="space-y-1">
+                  {Object.entries(uploadProgress).map(([key, progress]) => {
+                    const fileName = key.split('-').slice(0, -1).join('-');
+                    return (
+                      <div key={key} className="text-xs">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="opacity-60 truncate max-w-[200px]">{fileName}</span>
+                          <span className="opacity-40">{Math.round(progress)}%</span>
+                        </div>
+                        <div className="w-full h-1 bg-black/20 rounded-full overflow-hidden">
+                          <div
+                            className="h-full transition-all duration-300"
+                            style={{
+                              width: `${progress}%`,
+                              background: 'var(--accent)'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         <input
+          id={`file-input-${type}`}
           ref={fileInputRef}
           type="file"
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={handleFileSelect}
-          accept={type === "audio" ? "audio/*" : ".logicx,.logic"}
+          accept={type === "audio" ? "audio/*" : ""}
           multiple
         />
       </div>

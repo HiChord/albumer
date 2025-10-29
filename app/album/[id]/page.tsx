@@ -840,6 +840,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <WaveformPlayer
                       url={getAudioFile(song).url}
                       filename={getAudioFile(song).name}
+                      autoplay={true}
                     />
                   </div>
                 )}

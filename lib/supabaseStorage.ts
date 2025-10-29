@@ -435,8 +435,9 @@ export async function deleteFile(fileId: string): Promise<void> {
 
   // Delete from Supabase Storage if externalId exists
   if (file.externalId) {
+    const bucketName = file.type === "audio" ? "Audio-files" : "Logic-files";
     const { error: storageError } = await supabase.storage
-      .from("Audio-files")
+      .from(bucketName)
       .remove([file.externalId]);
 
     if (storageError) {

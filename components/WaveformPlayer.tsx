@@ -6,9 +6,10 @@ import { Play, Pause } from "lucide-react";
 interface WaveformPlayerProps {
   url: string;
   filename: string;
+  autoplay?: boolean;
 }
 
-export default function WaveformPlayer({ url, filename }: WaveformPlayerProps) {
+export default function WaveformPlayer({ url, filename, autoplay = false }: WaveformPlayerProps) {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -45,6 +46,11 @@ export default function WaveformPlayer({ url, filename }: WaveformPlayerProps) {
         setIsLoading(false);
         setDuration(formatTime(wavesurfer.getDuration()));
         setError(null);
+
+        // Auto-play if requested
+        if (autoplay) {
+          wavesurfer.play();
+        }
       });
 
       wavesurfer.on("audioprocess", () => {

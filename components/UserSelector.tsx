@@ -16,7 +16,7 @@ export default function UserSelector() {
           boxShadow: '0 4px 6px rgba(0, 0, 0, 0.3)',
         }}
       >
-        <User className="w-4 h-4 opacity-40" />
+        <User className="w-4 h-4" style={{ color: 'rgba(255, 255, 255, 0.4)' }} />
         <div className="flex gap-1">
           {users.map((user) => (
             <button
@@ -25,8 +25,8 @@ export default function UserSelector() {
               className="px-3 py-1 text-xs font-light tracking-wide rounded-full transition-all"
               style={{
                 background: currentUser === user ? 'var(--accent)' : 'transparent',
-                color: currentUser === user ? 'var(--background)' : 'var(--foreground)',
-                opacity: currentUser === user ? 1 : 0.5,
+                color: currentUser === user ? '#1a1a1a' : '#ffffff',
+                opacity: currentUser === user ? 1 : 0.7,
               }}
             >
               {user}
