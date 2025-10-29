@@ -186,15 +186,8 @@ export default function Home() {
                   }}
                 >
                   <div className="flex flex-col h-full">
-                    <div className="mb-8 flex items-center justify-between">
+                    <div className="mb-8">
                       <div className="w-2 h-2 rounded-full opacity-40 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--accent)' }}></div>
-                      <button
-                        onClick={(e) => handleDeleteAlbum(e, album.id, album.name)}
-                        className="opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity"
-                        title="Delete album"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
                     </div>
                     <h3 className="text-2xl font-light tracking-tight mb-3">
                       {album.name}
