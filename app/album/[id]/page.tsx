@@ -366,6 +366,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return song.files?.find((f: any) => f.type === "logic");
   };
 
+  const getProgressColor = (progress: string) => {
+    const colors: { [key: string]: string } = {
+      "Not Started": "#6B7280",
+      "Voice Memo": "#60A5FA",
+      "In Progress": "#FBBF24",
+      "Recording": "#EF4444",
+      "Mixing": "#A78BFA",
+      "Mastering": "#F97316",
+      "Complete": "#10B981",
+    };
+    return colors[progress] || "#6B7280";
+  };
+
   const getAudioFiles = () => {
     return album.songs
       .map((song: any) => {
@@ -735,10 +748,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <select
                       value={song.progress}
                       onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors opacity-60 hover:opacity-100"
-                      style={{ borderColor: 'var(--border)', color: 'var(--foreground)' }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.opacity = '1'; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.opacity = '0.6'; }}
+                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors hover:opacity-80"
+                      style={{
+                        borderColor: getProgressColor(song.progress),
+                        color: getProgressColor(song.progress),
+                        fontWeight: 500
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.opacity = '1'; }}
+                      onBlur={(e) => { e.currentTarget.style.opacity = '1'; }}
                     >
                       <option>Not Started</option>
                       <option>Voice Memo</option>
