@@ -23,6 +23,9 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
 
     let wavesurfer: any = null;
 
+    // Detect if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
     // Dynamically import wavesurfer to avoid SSR issues
     import("wavesurfer.js").then((WaveSurfer) => {
       if (!waveformRef.current) return;
@@ -37,7 +40,8 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
         barGap: 2,
         height: 60,
         normalize: true,
-        backend: "WebAudio",
+        backend: isMobile ? "MediaElement" : "WebAudio", // Use MediaElement for mobile
+        mediaControls: false,
       });
 
       wavesurfer.load(url);
@@ -47,9 +51,11 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
         setDuration(formatTime(wavesurfer.getDuration()));
         setError(null);
 
-        // Auto-play if requested
-        if (autoplay) {
-          wavesurfer.play();
+        // Don't auto-play on mobile (browsers block it)
+        if (autoplay && !isMobile) {
+          wavesurfer.play().catch((err: any) => {
+            console.log("Autoplay prevented:", err);
+          });
         }
       });
 
