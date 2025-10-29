@@ -145,12 +145,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             ),
           };
         });
-        // Remove from editing values after save
-        setEditingValues(prev => {
-          const newValues = { ...prev };
-          delete newValues[key];
-          return newValues;
-        });
+        // Don't remove from editing values - keep it until user moves away
       } catch (error) {
         console.error("Error saving:", error);
         // Keep the editing value if save failed
@@ -162,6 +157,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const getValue = (songId: string, field: string, defaultValue: any) => {
     const key = `${songId}-${field}`;
     return editingValues[key] !== undefined ? editingValues[key] : defaultValue;
+  };
+
+  // Clear editing value on blur
+  const handleBlur = (songId: string, field: string) => {
+    const key = `${songId}-${field}`;
+    setEditingValues(prev => {
+      const newValues = { ...prev };
+      delete newValues[key];
+      return newValues;
+    });
   };
 
   const handleSearchReferences = async () => {
@@ -619,14 +624,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <Plus className="w-3 h-3" />
                 <span>Add Track</span>
               </button>
-              <button
-                onClick={handleDeleteAlbum}
-                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity opacity-40 hover:opacity-100"
-                style={{ color: 'var(--foreground)' }}
-              >
-                <Trash2 className="w-3 h-3" />
-                <span>Delete Album</span>
-              </button>
             </div>
           </div>
         </div>
@@ -737,6 +734,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       type="text"
                       value={getValue(song.id, "title", song.title)}
                       onChange={(e) => handleUpdateSong(song.id, "title", e.target.value)}
+                      onBlur={() => handleBlur(song.id, "title")}
                       className="w-full bg-transparent border-none focus:outline-none font-light text-lg tracking-tight"
                       style={{ color: 'var(--foreground)', fontWeight: 300 }}
                       placeholder="Untitled"
@@ -827,6 +825,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <textarea
                       value={getValue(song.id, "notes", song.notes)}
                       onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
+                      onBlur={() => handleBlur(song.id, "notes")}
                       placeholder="..."
                       className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
                       style={{ color: 'var(--foreground)' }}
@@ -841,6 +840,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <textarea
                       value={getValue(song.id, "lyrics", song.lyrics)}
                       onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
+                      onBlur={() => handleBlur(song.id, "lyrics")}
                       placeholder="..."
                       className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
                       style={{ color: 'var(--foreground)' }}
