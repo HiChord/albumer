@@ -68,7 +68,16 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
         setCurrentTime(formatTime(time));
       });
 
-      wavesurfer.on("play", () => setIsPlaying(true));
+      wavesurfer.on("play", () => {
+        setIsPlaying(true);
+        // Pause all other audio/video elements when this starts playing
+        const allMedia = document.querySelectorAll('audio, video');
+        allMedia.forEach((media) => {
+          if (!media.paused) {
+            media.pause();
+          }
+        });
+      });
       wavesurfer.on("pause", () => setIsPlaying(false));
       wavesurfer.on("finish", () => {
         setIsPlaying(false);

@@ -53,14 +53,26 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
       }
     };
 
+    // Pause all other audio/video elements when this starts playing
+    const handlePlay = () => {
+      const allMedia = document.querySelectorAll('audio, video');
+      allMedia.forEach((media) => {
+        if (media !== audio && !media.paused) {
+          media.pause();
+        }
+      });
+    };
+
     audio.addEventListener("timeupdate", updateTime);
     audio.addEventListener("loadedmetadata", updateDuration);
     audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("play", handlePlay);
 
     return () => {
       audio.removeEventListener("timeupdate", updateTime);
       audio.removeEventListener("loadedmetadata", updateDuration);
       audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("play", handlePlay);
     };
   }, [currentIndex, playlist.length]);
 
@@ -336,7 +348,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
                     onClick={() => handleTrackClick(index)}
-                    className="group px-4 md:px-6 py-3 md:py-4 cursor-pointer transition-all duration-200"
+                    className="group px-4 md:px-6 py-4 md:py-4 cursor-pointer transition-all duration-200 border-b-2 md:border-b"
                     style={{
                       background: isCurrent
                         ? 'var(--highlight)'
@@ -349,18 +361,18 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
                       transform: isDragging ? 'scale(0.98)' : 'scale(1)',
                       cursor: isDragging ? 'grabbing' : 'grab',
                       boxShadow: isDropTarget ? '0 0 0 2px var(--accent)' : 'none',
-                      borderColor: 'var(--border)'
+                      borderColor: isCurrent ? 'var(--accent)' : 'var(--border)'
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-8 text-xs opacity-40 font-light" style={{ fontWeight: 300 }}>
+                      <div className="w-8 text-xs md:text-xs opacity-40 font-light" style={{ fontWeight: 300 }}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-light text-sm truncate" style={{ fontWeight: isCurrent ? 400 : 300 }}>
+                        <div className="font-light text-base md:text-sm truncate" style={{ fontWeight: isCurrent ? 500 : 300 }}>
                           {file.songTitle}
                         </div>
-                        <div className="text-xs opacity-40 truncate mt-0.5">
+                        <div className="text-sm md:text-xs opacity-40 truncate mt-0.5">
                           {file.name}
                         </div>
                       </div>
