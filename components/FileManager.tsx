@@ -163,13 +163,23 @@ export default function FileManager({
         setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Complete!' }));
 
-        uploadedFiles.push({
+        const uploadedFile = {
           name: file.name,
           url: urlData.publicUrl,
           size: file.size,
           mimeType: file.type || 'application/octet-stream',
           externalId: uniqueFilename,
-        });
+        };
+        uploadedFiles.push(uploadedFile);
+
+        // Call onUpload immediately for each successful file
+        console.log(`Calling onUpload for ${file.name}...`);
+        onUpload([uploadedFile]);
+        console.log(`onUpload completed for ${file.name}`);
+
+        // Keep success status visible for a moment
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
       } catch (err: any) {
         console.error("Upload error:", err);
         const errorMsg = err.message.includes("exceeded the maximum")
@@ -186,11 +196,14 @@ export default function FileManager({
 
     setIsUploading(false);
 
-    if (uploadedFiles.length > 0) {
-      onUpload(uploadedFiles);
-      // Only reset on success
+    // Only clear progress if all uploads succeeded
+    if (uploadedFiles.length === totalFiles && !uploadError) {
+      console.log(`All ${totalFiles} files uploaded successfully, clearing progress UI`);
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setUploadProgress({});
       setUploadStatus({});
+    } else {
+      console.log(`Upload incomplete: ${uploadedFiles.length}/${totalFiles} succeeded`);
     }
 
     // Reset input
