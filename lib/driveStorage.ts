@@ -304,7 +304,7 @@ export async function createSong(albumId: string, title: string = "Untitled"): P
     title,
     lyrics: "",
     notes: "",
-    progress: "Not Started",
+    progress: "In Progress",
     order: maxOrder + 1,
     albumId,
     createdAt: new Date().toISOString(),

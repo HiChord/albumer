@@ -389,7 +389,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
   const getProgressColor = (progress: string) => {
     const colors: { [key: string]: string } = {
-      "Not Started": "#6B7280",
       "Voice Memo": "#60A5FA",
       "In Progress": "#FBBF24",
       "Recording": "#EF4444",
@@ -397,7 +396,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       "Mastering": "#F97316",
       "Complete": "#10B981",
     };
-    return colors[progress] || "#6B7280";
+    return colors[progress] || "#FBBF24"; // Default to "In Progress" color
   };
 
   const getAudioFiles = () => {
@@ -777,7 +776,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 <Headphones className="w-3 h-3" />
-                <span>Listen</span>
+                <span>Listen Mode</span>
               </button>
               <button
                 onClick={handleAddSong}
@@ -928,7 +927,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                         border: 'none'
                       }}
                     >
-                      <option>Not Started</option>
                       <option>Voice Memo</option>
                       <option>In Progress</option>
                       <option>Recording</option>
