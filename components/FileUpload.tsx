@@ -35,12 +35,15 @@ export default function FileUpload({ onUploadComplete, accept, label }: FileUplo
         body: formData,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("Upload failed");
+        console.error("Upload failed response:", data);
+        throw new Error(data.error || "Upload failed");
       }
 
-      const data = await response.json();
       if (!data.file) {
+        console.error("Upload response:", data);
         throw new Error("Upload response missing file");
       }
 
