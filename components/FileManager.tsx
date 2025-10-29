@@ -156,7 +156,7 @@ export default function FileManager({
                 {type === "audio" ? <FileAudio className="w-16 h-16" /> : <FileIcon className="w-16 h-16" />}
               </div>
               <p className="text-sm opacity-40">No {type} files uploaded yet</p>
-              <p className="text-xs opacity-30 mt-2">Click "Upload New File" to add files</p>
+              <p className="text-xs opacity-30 mt-2">Click &quot;Upload New File&quot; to add files</p>
             </div>
           ) : (
             <div className="space-y-2">
