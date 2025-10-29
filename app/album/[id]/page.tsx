@@ -33,9 +33,11 @@ import VersionHistory from "@/components/VersionHistory";
 import ListenMode from "@/components/ListenMode";
 import FileUpload from "@/components/FileUpload";
 import WaveformPlayer from "@/components/WaveformPlayer";
+import { useUser } from "@/lib/UserContext";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
+  const { currentUser } = useUser();
   const [album, setAlbum] = useState<any>(null);
   const [playingSong, setPlayingSong] = useState<string | null>(null);
   const [showRefSearch, setShowRefSearch] = useState<string | null>(null);
@@ -48,7 +50,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [editingCommentText, setEditingCommentText] = useState<string>("");
   const [editingCommentUser, setEditingCommentUser] = useState<string>("");
   const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<string>("Dev");
   const [editingValues, setEditingValues] = useState<{ [key: string]: any }>({});
   const [editingAlbumName, setEditingAlbumName] = useState(false);
   const [albumName, setAlbumName] = useState("");
@@ -58,17 +59,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => {
     loadAlbum();
-    // Load saved user from localStorage
-    const savedUser = localStorage.getItem("albumer_user");
-    if (savedUser) {
-      setCurrentUser(savedUser);
-    }
-  }, [resolvedParams.id]);
 
-  useEffect(() => {
-    // Save user to localStorage whenever it changes
-    localStorage.setItem("albumer_user", currentUser);
-  }, [currentUser]);
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(() => {
+      loadAlbum();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [resolvedParams.id]);
 
   const loadAlbum = async () => {
     setLoading(true);
@@ -359,23 +357,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               </p>
             </div>
 
-            {/* Right: User + Listen Mode + Add */}
+            {/* Right: Listen Mode + Add */}
             <div className="flex items-center justify-end gap-4">
-              <select
-                value={currentUser}
-                onChange={(e) => setCurrentUser(e.target.value)}
-                className="px-3 py-2 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors"
-                style={{
-                  borderColor: 'var(--border)',
-                  color: 'var(--foreground)'
-                }}
-                onFocus={(e) => e.currentTarget.style.borderColor = 'var(--accent)'}
-                onBlur={(e) => e.currentTarget.style.borderColor = 'var(--border)'}
-              >
-                <option value="Dev">Dev</option>
-                <option value="Andy">Andy</option>
-                <option value="Khal">Khal</option>
-              </select>
               <button
                 onClick={() => setShowListenMode(true)}
                 className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"

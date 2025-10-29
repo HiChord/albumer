@@ -12,7 +12,11 @@ export interface Song {
   id: string;
   title: string;
   lyrics: string;
+  lyricsUser?: string;
+  lyricsUpdatedAt?: string;
   notes: string;
+  notesUser?: string;
+  notesUpdatedAt?: string;
   progress: string;
   order: number;
   albumId: string;
@@ -39,6 +43,7 @@ export interface Reference {
   artist: string;
   url: string;
   thumbnail?: string;
+  user?: string;
   songId: string;
   createdAt: string;
 }
@@ -320,7 +325,8 @@ export async function createSong(albumId: string, title: string = "Untitled"): P
 
 export async function updateSong(
   id: string,
-  data: Partial<Omit<Song, "id" | "albumId" | "createdAt">>
+  data: Partial<Omit<Song, "id" | "albumId" | "createdAt">>,
+  user: string = "User"
 ): Promise<Song | null> {
   const songs = await getAllSongs();
   const index = songs.findIndex((s) => s.id === id);
@@ -337,10 +343,21 @@ export async function updateSong(
     timestamp: new Date().toISOString(),
   };
 
+  // Track user attribution for lyrics and notes
+  const updatedData: any = { ...data };
+  if (data.lyrics !== undefined) {
+    updatedData.lyricsUser = user;
+    updatedData.lyricsUpdatedAt = new Date().toISOString();
+  }
+  if (data.notes !== undefined) {
+    updatedData.notesUser = user;
+    updatedData.notesUpdatedAt = new Date().toISOString();
+  }
+
   // Update song
   songs[index] = {
     ...currentSong,
-    ...data,
+    ...updatedData,
     updatedAt: new Date().toISOString(),
   };
   await writeJsonFile("songs.json", songs);
@@ -352,7 +369,7 @@ export async function updateSong(
       id,
       `Updated ${field}`,
       "",
-      "User",
+      user,
       JSON.stringify(snapshot)
     );
   }
@@ -462,7 +479,7 @@ export async function createReference(
   await writeJsonFile("references.json", references);
 
   // Create version
-  await createVersion(songId, "Added reference", data.title, "User");
+  await createVersion(songId, "Added reference", data.title, data.user || "User");
 
   // Touch song's album
   const song = await getSongById(songId);

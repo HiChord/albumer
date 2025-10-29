@@ -1,6 +1,6 @@
 "use server";
 
-import * as storage from "./localStorage";
+import * as storage from "./supabaseStorage";
 import { revalidatePath } from "next/cache";
 
 // Album Actions
