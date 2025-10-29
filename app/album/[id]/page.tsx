@@ -444,7 +444,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     const categorizedFiles = files.map((file) => {
       const ext = file.name.split(".").pop()?.toLowerCase();
       const isAudio = ["mp3", "wav", "aac", "flac", "m4a", "ogg", "aiff"].includes(ext || "");
-      const isLogic = ["logicx", "logic"].includes(ext || "");
+      const isLogic = ["logicx", "logic", "zip"].includes(ext || "") || file.name.includes(".logicx.");
 
       return {
         file,
@@ -464,32 +464,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       targetSongId = newSong.id;
     }
 
-    // Upload all files
-    for (const { file, type } of files) {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (data.file) {
-        await addFile(targetSongId, {
-          name: data.file.name,
-          type,
-          url: data.file.url,
-          mimeType: data.file.mimeType,
-          size: data.file.size,
-          externalId: data.file.externalId ?? undefined,
-        });
-      }
-    }
-
     setDroppedFiles(null);
-    await loadAlbum();
+
+    // Group files by type
+    const audioFiles = files.filter(f => f.type === "audio").map(f => f.file);
+    const logicFiles = files.filter(f => f.type === "logic").map(f => f.file);
+
+    // Use background upload for each type
+    if (audioFiles.length > 0) {
+      handleBackgroundUpload(targetSongId, "audio", audioFiles);
+    }
+    if (logicFiles.length > 0) {
+      handleBackgroundUpload(targetSongId, "logic", logicFiles);
+    }
   };
 
   const handleReorderFromListenMode = async (reorderedFiles: any[]) => {
@@ -550,7 +537,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 50));
+        // Longer timeout to ensure UI renders before blocking arrayBuffer
+        await new Promise(resolve => setTimeout(resolve, 200));
 
         // Generate unique filename
         const timestamp = Date.now();
