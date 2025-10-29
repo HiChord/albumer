@@ -748,14 +748,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     <select
                       value={song.progress}
                       onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light border-b bg-transparent focus:outline-none transition-colors hover:opacity-80"
+                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded focus:outline-none transition-all hover:opacity-90"
                       style={{
-                        borderColor: getProgressColor(song.progress),
-                        color: getProgressColor(song.progress),
-                        fontWeight: 500
+                        background: getProgressColor(song.progress),
+                        color: 'white',
+                        border: 'none'
                       }}
-                      onFocus={(e) => { e.currentTarget.style.opacity = '1'; }}
-                      onBlur={(e) => { e.currentTarget.style.opacity = '1'; }}
                     >
                       <option>Not Started</option>
                       <option>Voice Memo</option>
