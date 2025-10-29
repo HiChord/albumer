@@ -395,21 +395,17 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
               {/* Waveform Visualization */}
               <div className="mb-4">
+                {!waveformReady && (
+                  <div className="text-xs opacity-40 text-center mb-2">Loading waveform...</div>
+                )}
                 <div
                   ref={waveformRef}
                   className="w-full rounded-lg overflow-hidden"
                   style={{
                     background: 'var(--surface)',
-                    minHeight: '80px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    minHeight: '80px'
                   }}
-                >
-                  {!waveformReady && (
-                    <div className="text-xs opacity-40">Loading waveform...</div>
-                  )}
-                </div>
+                />
               </div>
 
               {/* Progress Bar */}
