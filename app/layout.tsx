@@ -3,7 +3,7 @@ import "./globals.css";
 import ClientLayout from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
-  title: "Albumer - Album Organization for Bands",
+  title: "Albumer - Album in Progress",
   description: "Beautiful tool for organizing your album production",
 };
 
