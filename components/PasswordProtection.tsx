@@ -21,13 +21,25 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
     setIsLoading(false);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "test") {
-      localStorage.setItem("albumer_auth", "authenticated");
-      setIsAuthenticated(true);
-      setError(false);
-    } else {
+    setError(false);
+
+    try {
+      const response = await fetch("/api/auth/check-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        localStorage.setItem("albumer_auth", "authenticated");
+        setIsAuthenticated(true);
+      } else {
+        setError(true);
+        setPassword("");
+      }
+    } catch (err) {
       setError(true);
       setPassword("");
     }

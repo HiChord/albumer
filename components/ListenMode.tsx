@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music } from "lucide-react";
+import WaveSurfer from "wavesurfer.js";
 
 interface AudioFile {
   id: string;
@@ -28,8 +29,11 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [playlist, setPlaylist] = useState<AudioFile[]>(audioFiles);
+  const [waveformReady, setWaveformReady] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const waveformRef = useRef<HTMLDivElement>(null);
+  const wavesurferRef = useRef<WaveSurfer | null>(null);
 
   useEffect(() => {
     setPlaylist(audioFiles);
@@ -75,6 +79,88 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
       audio.pause();
     }
   }, [isPlaying, currentIndex]);
+
+  // Initialize WaveSurfer for waveform visualization
+  useEffect(() => {
+    if (!waveformRef.current || !audioRef.current || !currentFile) return;
+
+    setWaveformReady(false);
+
+    // Clean up previous instance
+    if (wavesurferRef.current) {
+      wavesurferRef.current.destroy();
+      wavesurferRef.current = null;
+    }
+
+    // Detect if mobile device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // Create new WaveSurfer instance
+    const wavesurfer = WaveSurfer.create({
+      container: waveformRef.current,
+      waveColor: "var(--accent-muted, rgba(212, 165, 116, 0.3))",
+      progressColor: "var(--accent, #d4a574)",
+      cursorColor: "var(--accent, #d4a574)",
+      barWidth: 2,
+      barRadius: 3,
+      barGap: 2,
+      height: 80,
+      normalize: true,
+      backend: isMobile ? "MediaElement" : "WebAudio",
+      mediaControls: false,
+      interact: true,
+    });
+
+    wavesurfer.load(currentFile.url);
+
+    wavesurfer.on("ready", () => {
+      setWaveformReady(true);
+    });
+
+    wavesurfer.on("error", (err) => {
+      console.error("WaveSurfer error:", err);
+      setWaveformReady(false);
+    });
+
+    // Sync WaveSurfer with native audio element
+    wavesurfer.on("interaction", () => {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.currentTime = wavesurfer.getCurrentTime();
+      }
+    });
+
+    wavesurferRef.current = wavesurfer;
+
+    return () => {
+      if (wavesurferRef.current) {
+        wavesurferRef.current.destroy();
+        wavesurferRef.current = null;
+      }
+    };
+  }, [currentFile, currentIndex]);
+
+  // Sync WaveSurfer playback state with audio element
+  useEffect(() => {
+    const audio = audioRef.current;
+    const wavesurfer = wavesurferRef.current;
+    if (!audio || !wavesurfer) return;
+
+    const syncWaveform = () => {
+      if (wavesurfer && waveformReady) {
+        const progress = audio.currentTime / audio.duration;
+        if (!isNaN(progress)) {
+          wavesurfer.seekTo(progress);
+        }
+      }
+    };
+
+    audio.addEventListener("timeupdate", syncWaveform);
+
+    return () => {
+      audio.removeEventListener("timeupdate", syncWaveform);
+    };
+  }, [waveformReady, currentIndex]);
 
   const togglePlay = () => {
     setIsPlaying(!isPlaying);
@@ -284,12 +370,31 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
           <div className="border-t" style={{ borderColor: 'var(--border)', background: 'var(--surface-alt)' }}>
             <div className="px-4 md:px-8 py-4 md:py-6">
               {/* Now Playing */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <div className="text-sm font-light mb-1" style={{ fontWeight: 300 }}>
                   {currentFile.songTitle}
                 </div>
                 <div className="text-xs opacity-40 truncate">
                   {currentFile.name}
+                </div>
+              </div>
+
+              {/* Waveform Visualization */}
+              <div className="mb-4">
+                <div
+                  ref={waveformRef}
+                  className="w-full rounded-lg overflow-hidden"
+                  style={{
+                    background: 'var(--surface)',
+                    minHeight: '80px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  {!waveformReady && (
+                    <div className="text-xs opacity-40">Loading waveform...</div>
+                  )}
                 </div>
               </div>
 
