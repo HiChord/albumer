@@ -22,7 +22,7 @@ interface FileManagerProps {
   onDelete: (fileId: string) => void;
   onClose: () => void;
   onUploadProgress?: (fileKey: string, progress: number, status: string, fileName: string) => void;
-  onUploadStart?: () => void;
+  onUploadStart?: (files: File[]) => void;
 }
 
 export default function FileManager({
@@ -77,15 +77,17 @@ export default function FileManager({
     const selectedFiles = Array.from(e.target.files || []);
     if (selectedFiles.length === 0) return;
 
+    // Close modal immediately and pass files to parent for background upload
+    if (onUploadStart) {
+      onUploadStart(selectedFiles);
+      onClose(); // Close the modal
+      return; // Don't continue - parent will handle upload
+    }
+
+    // Fallback: handle upload in modal if no onUploadStart
     setIsUploading(true);
     setUploadError(null);
     const uploadedFiles: any[] = [];
-
-    // Close modal immediately and start background upload
-    if (onUploadStart) {
-      onUploadStart();
-      onClose(); // Close the modal
-    }
 
     // Dynamic import to avoid SSR issues
     const { createClient } = await import("@supabase/supabase-js");

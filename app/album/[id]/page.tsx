@@ -527,6 +527,147 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     await loadAlbum();
   };
 
+  const handleBackgroundUpload = async (songId: string, type: "audio" | "logic", files: File[]) => {
+    // Dynamic import Supabase
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const fileKey = `${file.name}-${i}`;
+
+      try {
+        // Show immediate feedback
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 0, status: 'Preparing...', fileName: file.name }
+          }
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 50));
+
+        // Generate unique filename
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 8);
+        const ext = file.name.split('.').pop();
+        const basename = file.name
+          .replace(`.${ext}`, '')
+          .replace(/[^a-zA-Z0-9_-]/g, '_');
+        const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
+
+        const bucketName = type === "logic" ? "Logic-files" : "Audio-files";
+
+        // Convert to bytes
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 5, status: 'Reading file...', fileName: file.name }
+          }
+        }));
+
+        const bytes = await file.arrayBuffer();
+
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 10, status: 'Uploading to storage...', fileName: file.name }
+          }
+        }));
+
+        // Progress ticker
+        let progressValue = 10;
+        let tickerActive = true;
+        const progressTicker = setInterval(() => {
+          if (tickerActive && progressValue < 85) {
+            progressValue += 5;
+            setUploadProgress(prev => ({
+              ...prev,
+              [songId]: {
+                ...(prev[songId] || {}),
+                [fileKey]: { progress: progressValue, status: 'Uploading to storage...', fileName: file.name }
+              }
+            }));
+          }
+        }, 5000);
+
+        const { data, error } = await supabase.storage
+          .from(bucketName)
+          .upload(uniqueFilename, bytes, {
+            contentType: file.type || 'application/octet-stream',
+            upsert: false,
+          });
+
+        tickerActive = false;
+        clearInterval(progressTicker);
+
+        if (error) throw new Error(error.message);
+
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 90, status: 'Finalizing...', fileName: file.name }
+          }
+        }));
+
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(uniqueFilename);
+
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 100, status: 'Complete!', fileName: file.name }
+          }
+        }));
+
+        // Save to database
+        await addFile(songId, {
+          name: file.name,
+          type,
+          url: urlData.publicUrl,
+          mimeType: file.type || 'application/octet-stream',
+          size: file.size,
+          externalId: uniqueFilename,
+        });
+
+        await loadAlbum();
+
+        // Clear progress after 2 seconds
+        setTimeout(() => {
+          setUploadProgress(prev => {
+            const newProgress = { ...prev };
+            if (newProgress[songId]) {
+              delete newProgress[songId][fileKey];
+              if (Object.keys(newProgress[songId]).length === 0) {
+                delete newProgress[songId];
+              }
+            }
+            return newProgress;
+          });
+        }, 2000);
+
+      } catch (err: any) {
+        console.error("Upload error:", err);
+        setUploadProgress(prev => ({
+          ...prev,
+          [songId]: {
+            ...(prev[songId] || {}),
+            [fileKey]: { progress: 0, status: `Failed: ${err.message}`, fileName: file.name }
+          }
+        }));
+      }
+    }
+  };
+
   const themeClass = `theme-${currentUser.toLowerCase()}`;
 
   if (loading || !album) {
@@ -572,17 +713,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           onUpload={(files) => handleFileManagerUpload(fileManagerOpen.songId, fileManagerOpen.type, files)}
           onDelete={(fileId) => handleFileDelete(fileId, fileManagerOpen.songId)}
           onClose={() => setFileManagerOpen(null)}
-          onUploadStart={() => {
-            // Modal will close immediately, upload continues in background
-          }}
-          onUploadProgress={(fileKey, progress, status, fileName) => {
-            setUploadProgress(prev => ({
-              ...prev,
-              [fileManagerOpen.songId]: {
-                ...(prev[fileManagerOpen.songId] || {}),
-                [fileKey]: { progress, status, fileName }
-              }
-            }));
+          onUploadStart={(files) => {
+            // Start background upload and close modal
+            handleBackgroundUpload(fileManagerOpen.songId, fileManagerOpen.type, files);
           }}
         />
       )}
