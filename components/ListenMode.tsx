@@ -82,6 +82,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
   // Initialize WaveSurfer for waveform visualization
   useEffect(() => {
+    const currentFile = playlist[currentIndex];
     if (!waveformRef.current || !audioRef.current || !currentFile) return;
 
     setWaveformReady(false);
@@ -138,7 +139,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
         wavesurferRef.current = null;
       }
     };
-  }, [currentFile, currentIndex]);
+  }, [playlist, currentIndex]);
 
   // Sync WaveSurfer playback state with audio element
   useEffect(() => {
