@@ -917,6 +917,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
                   {/* Status */}
                   <div className="w-32">
+                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                      Status
+                    </div>
                     <select
                       value={song.progress}
                       onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
