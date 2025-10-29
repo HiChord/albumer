@@ -21,6 +21,9 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
   useEffect(() => {
     if (!waveformRef.current) return;
 
+    // Prevent double initialization in React Strict Mode
+    if (wavesurferRef.current) return;
+
     let wavesurfer: any = null;
     let handlePauseEvent: ((e: Event) => void) | null = null;
 
@@ -29,7 +32,7 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
 
     // Dynamically import wavesurfer to avoid SSR issues
     import("wavesurfer.js").then((WaveSurfer) => {
-      if (!waveformRef.current) return;
+      if (!waveformRef.current || wavesurferRef.current) return;
 
       wavesurfer = WaveSurfer.default.create({
         container: waveformRef.current,
