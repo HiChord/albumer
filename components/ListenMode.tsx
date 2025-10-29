@@ -65,8 +65,12 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
     const audio = audioRef.current;
     if (!audio) return;
 
+    // Reset time when track changes
+    setCurrentTime(0);
+    setDuration(0);
+
     if (isPlaying) {
-      audio.play();
+      audio.play().catch(err => console.error("Play error:", err));
     } else {
       audio.pause();
     }
@@ -367,6 +371,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
             {/* Hidden Audio Element */}
             <audio
+              key={currentFile.id}
               ref={audioRef}
               src={currentFile.url}
               preload="metadata"
