@@ -55,12 +55,16 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
     // Pause all other audio/video elements when this starts playing
     const handlePlay = () => {
+      // Pause all HTML audio/video elements
       const allMedia = document.querySelectorAll<HTMLMediaElement>('audio, video');
       allMedia.forEach((media) => {
         if (media !== audio && !media.paused) {
           media.pause();
         }
       });
+
+      // Dispatch custom event to pause all WaveSurfer players
+      window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: 'listen-mode' } }));
     };
 
     audio.addEventListener("timeupdate", updateTime);
@@ -181,10 +185,21 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
       }
     };
 
+    // Listen for pause events from track players
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.source !== 'listen-mode') {
+        audio.pause();
+        setIsPlaying(false);
+      }
+    };
+
     audio.addEventListener("timeupdate", syncWaveform);
+    window.addEventListener('pause-all-players', handlePauseEvent);
 
     return () => {
       audio.removeEventListener("timeupdate", syncWaveform);
+      window.removeEventListener('pause-all-players', handlePauseEvent);
     };
   }, [waveformReady, currentIndex]);
 

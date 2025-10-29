@@ -22,6 +22,7 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
     if (!waveformRef.current) return;
 
     let wavesurfer: any = null;
+    let handlePauseEvent: ((e: Event) => void) | null = null;
 
     // Detect if mobile device
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -77,8 +78,21 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
             media.pause();
           }
         });
+
+        // Dispatch custom event to pause all other players
+        window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: url } }));
       });
       wavesurfer.on("pause", () => setIsPlaying(false));
+
+      // Listen for pause events from other players
+      handlePauseEvent = (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (customEvent.detail.source !== url && customEvent.detail.source !== 'listen-mode') {
+          wavesurfer.pause();
+        }
+      };
+
+      window.addEventListener('pause-all-players', handlePauseEvent);
       wavesurfer.on("finish", () => {
         setIsPlaying(false);
         setCurrentTime("0:00");
@@ -103,6 +117,9 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
     });
 
     return () => {
+      if (handlePauseEvent) {
+        window.removeEventListener('pause-all-players', handlePauseEvent);
+      }
       if (wavesurferRef.current) {
         try {
           wavesurferRef.current.stop();
