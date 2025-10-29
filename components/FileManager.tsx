@@ -34,6 +34,8 @@ export default function FileManager({
 }: FileManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
+  const [uploadStatus, setUploadStatus] = useState<{[key: string]: string}>({});
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Force a direct file input trigger
@@ -72,6 +74,7 @@ export default function FileManager({
     if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
+    setUploadError(null);
     const uploadedFiles: any[] = [];
 
     // Dynamic import to avoid SSR issues
@@ -88,6 +91,11 @@ export default function FileManager({
       const fileKey = `${file.name}-${i}`;
 
       try {
+        // Show immediate feedback
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 0 }));
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Preparing...' }));
+        console.log(`Starting upload: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
+
         // Generate unique filename
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
@@ -99,16 +107,18 @@ export default function FileManager({
 
         // Determine bucket based on type prop
         const bucketName = type === "logic" ? "Logic-files" : "Audio-files";
+        console.log(`Target bucket: ${bucketName}`);
 
-        // Show file size and start upload indicator
-        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 1 }));
-
-        // Convert to bytes
+        // Convert to bytes (this can take time for large files)
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Reading file...' }));
         const bytes = await file.arrayBuffer();
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 15 }));
+        console.log(`File converted to buffer: ${bytes.byteLength} bytes`);
+
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 10 }));
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Uploading to storage...' }));
 
         // Upload to Supabase Storage (this is the slow part for large files)
+        console.log(`Starting Supabase upload...`);
         const { data, error} = await supabase.storage
           .from(bucketName)
           .upload(uniqueFilename, bytes, {
@@ -116,21 +126,24 @@ export default function FileManager({
             upsert: false,
           });
 
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
-
         if (error) {
           console.error("Supabase upload error:", error);
           throw new Error(error.message);
         }
 
         console.log(`Upload successful! File: ${uniqueFilename}`);
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Finalizing...' }));
 
         // Get public URL
         const { data: urlData } = supabase.storage
           .from(bucketName)
           .getPublicUrl(uniqueFilename);
 
+        console.log(`Public URL: ${urlData.publicUrl}`);
         setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Complete!' }));
+
         uploadedFiles.push({
           name: file.name,
           url: urlData.publicUrl,
@@ -142,23 +155,23 @@ export default function FileManager({
         console.error("Upload error:", err);
         const errorMsg = err.message.includes("exceeded the maximum")
           ? `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please increase the upload limit in Supabase Storage settings.`
-          : err.message;
-        alert(`Failed to upload ${file.name}: ${errorMsg}`);
+          : err.message || 'Unknown error occurred';
 
-        // Remove progress for failed file
-        setUploadProgress(prev => {
-          const newProgress = { ...prev };
-          delete newProgress[fileKey];
-          return newProgress;
-        });
+        setUploadError(`Failed to upload ${file.name}: ${errorMsg}`);
+        setUploadStatus(prev => ({ ...prev, [fileKey]: 'Failed!' }));
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 0 }));
+
+        // Don't remove progress - keep it visible so user can see the error
       }
     }
 
     setIsUploading(false);
-    setUploadProgress({});
 
     if (uploadedFiles.length > 0) {
       onUpload(uploadedFiles);
+      // Only reset on success
+      setUploadProgress({});
+      setUploadStatus({});
     }
 
     // Reset input
@@ -304,6 +317,11 @@ export default function FileManager({
               Close
             </button>
             <div className="flex flex-col gap-2">
+              {uploadError && (
+                <div className="px-4 py-2 text-xs bg-red-500/20 border border-red-500/30 rounded text-red-200 max-w-sm">
+                  {uploadError}
+                </div>
+              )}
               <label
                 htmlFor={`file-input-${type}`}
                 className={`flex items-center gap-2 px-6 py-2 text-sm font-light text-white transition-opacity cursor-pointer ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -314,32 +332,32 @@ export default function FileManager({
                 <Upload className="w-4 h-4" />
                 {isUploading ? "Uploading..." : "Upload New File"}
               </label>
-              {isUploading && Object.keys(uploadProgress).length > 0 && (
+              {Object.keys(uploadProgress).length > 0 && (
                 <div className="space-y-2">
                   {Object.entries(uploadProgress).map(([key, progress]) => {
                     const fileName = key.split('-').slice(0, -1).join('-');
-                    const isStuck = progress > 10 && progress < 100;
+                    const status = uploadStatus[key] || '';
+                    const isUploading = progress > 0 && progress < 100 && status !== 'Failed!';
+                    const isFailed = status === 'Failed!';
                     return (
                       <div key={key} className="text-xs space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="opacity-60 truncate max-w-[180px]" title={fileName}>{fileName}</span>
-                          <span className="opacity-40">
-                            {progress < 100 ? (
-                              isStuck ? 'Uploading...' : `${Math.round(progress)}%`
-                            ) : 'Done!'}
+                          <span className={`opacity-40 ${isFailed ? 'text-red-400' : ''}`}>
+                            {status || `${Math.round(progress)}%`}
                           </span>
                         </div>
-                        {isStuck && (
+                        {isUploading && progress > 0 && (
                           <div className="text-[10px] opacity-30">
-                            Large file - this may take a few minutes...
+                            {progress < 10 ? 'Preparing file...' : 'Large file - this may take several minutes...'}
                           </div>
                         )}
                         <div className="w-full h-1 bg-black/20 rounded-full overflow-hidden">
                           <div
-                            className={`h-full transition-all ${isStuck ? 'animate-pulse' : 'duration-300'}`}
+                            className={`h-full transition-all ${isUploading ? 'animate-pulse' : 'duration-300'} ${isFailed ? 'bg-red-500' : ''}`}
                             style={{
-                              width: `${Math.max(progress, 15)}%`,
-                              background: 'var(--accent)'
+                              width: `${Math.max(progress, 5)}%`,
+                              background: isFailed ? undefined : 'var(--accent)'
                             }}
                           />
                         </div>
