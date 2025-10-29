@@ -128,27 +128,48 @@ export default function FileManager({
         console.log(`Starting Supabase upload to ${bucketName}...`);
         const uploadStartTime = Date.now();
 
-        const { data, error} = await supabase.storage
-          .from(bucketName)
-          .upload(uniqueFilename, bytes, {
-            contentType: file.type || 'application/octet-stream',
-            upsert: false,
-          });
+        // Start a progress ticker for long uploads
+        let progressValue = 10;
+        let tickerActive = true;
+        const progressTicker = setInterval(() => {
+          if (tickerActive && progressValue < 85) {
+            progressValue += 5;
+            setUploadProgress(prev => ({ ...prev, [fileKey]: progressValue }));
+            const elapsedSecs = ((Date.now() - uploadStartTime) / 1000).toFixed(0);
+            console.log(`Still uploading... ${elapsedSecs}s elapsed`);
+          }
+        }, 5000); // Update every 5 seconds
 
-        const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(1);
+        try {
+          const { data, error} = await supabase.storage
+            .from(bucketName)
+            .upload(uniqueFilename, bytes, {
+              contentType: file.type || 'application/octet-stream',
+              upsert: false,
+            });
 
-        if (error) {
-          console.error("Supabase upload error:", error);
-          console.error("Error details:", {
-            message: error.message,
-            name: error.name,
-            statusCode: (error as any).statusCode,
-            stack: error.stack
-          });
-          throw new Error(error.message);
+          tickerActive = false;
+          clearInterval(progressTicker);
+
+          const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(1);
+
+          if (error) {
+            console.error("Supabase upload error:", error);
+            console.error("Error details:", {
+              message: error.message,
+              name: error.name,
+              statusCode: (error as any).statusCode,
+              stack: error.stack
+            });
+            throw new Error(error.message);
+          }
+
+          console.log(`Supabase upload completed in ${uploadTime}s`);
+        } catch (uploadError) {
+          tickerActive = false;
+          clearInterval(progressTicker);
+          throw uploadError;
         }
-
-        console.log(`Supabase upload completed in ${uploadTime}s`);
 
         console.log(`Upload successful! File: ${uniqueFilename}`);
         setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
@@ -362,7 +383,7 @@ export default function FileManager({
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
                 <Upload className="w-4 h-4" />
-                {isUploading ? "Uploading..." : "Upload New File"}
+                {isUploading || Object.keys(uploadProgress).length > 0 ? "Uploading..." : "Upload New File"}
               </label>
               {Object.keys(uploadProgress).length > 0 && (
                 <div className="space-y-2">
