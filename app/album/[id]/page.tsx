@@ -528,6 +528,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   };
 
   const handleBackgroundUpload = async (songId: string, type: "audio" | "logic", files: File[]) => {
+    console.log("AlbumPage: handleBackgroundUpload called", { songId, type, filesCount: files.length });
     // Dynamic import Supabase
     const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient(

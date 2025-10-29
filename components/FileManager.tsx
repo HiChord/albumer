@@ -74,12 +74,16 @@ export default function FileManager({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("FileManager: File selected event triggered");
     const selectedFiles = Array.from(e.target.files || []);
+    console.log(`FileManager: ${selectedFiles.length} files selected`, selectedFiles);
     if (selectedFiles.length === 0) return;
 
     // Close modal immediately and pass files to parent for background upload
     if (onUploadStart) {
+      console.log("FileManager: Calling onUploadStart callback");
       onUploadStart(selectedFiles);
+      console.log("FileManager: Closing modal");
       onClose(); // Close the modal
       return; // Don't continue - parent will handle upload
     }
