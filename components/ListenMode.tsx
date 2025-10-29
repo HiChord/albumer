@@ -193,13 +193,13 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
       />
 
       {/* Sidebar */}
-      <div className="relative ml-auto w-full max-w-2xl shadow-2xl flex flex-col" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+      <div className="relative ml-auto w-full md:max-w-2xl shadow-2xl flex flex-col" style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b" style={{ borderColor: 'var(--border)', background: 'var(--surface-alt)' }}>
+        <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b" style={{ borderColor: 'var(--border)', background: 'var(--surface-alt)' }}>
           <div className="flex items-center gap-4">
             <Music className="w-4 h-4 opacity-60" style={{ color: 'var(--accent)' }} />
             <div>
-              <h2 className="text-lg font-light tracking-tight" style={{ fontWeight: 300 }}>Listen Mode</h2>
+              <h2 className="text-base md:text-lg font-light tracking-tight" style={{ fontWeight: 300 }}>Listen Mode</h2>
               <p className="text-xs opacity-40 uppercase tracking-wider mt-1">{playlist.length} tracks</p>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
                     onDrop={(e) => handleDrop(e, index)}
                     onDragEnd={handleDragEnd}
                     onClick={() => handleTrackClick(index)}
-                    className="group px-6 py-4 cursor-pointer transition-all duration-200"
+                    className="group px-4 md:px-6 py-3 md:py-4 cursor-pointer transition-all duration-200"
                     style={{
                       background: isCurrent
                         ? 'var(--highlight)'
@@ -282,7 +282,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
         {/* Player Controls */}
         {currentFile && (
           <div className="border-t" style={{ borderColor: 'var(--border)', background: 'var(--surface-alt)' }}>
-            <div className="px-8 py-6">
+            <div className="px-4 md:px-8 py-4 md:py-6">
               {/* Now Playing */}
               <div className="mb-6">
                 <div className="text-sm font-light mb-1" style={{ fontWeight: 300 }}>

@@ -302,7 +302,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     setDragOverIndex(null);
   };
 
-  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedIndex === null || draggedIndex === dropIndex) {
       setDraggedIndex(null);
@@ -317,6 +317,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     setAlbum({ ...album, songs: newSongs });
     setDraggedIndex(null);
     setDragOverIndex(null);
+
+    // Persist order to database
+    const songIds = newSongs.map(s => s.id);
+    await reorderSongs(album.id, songIds);
   };
 
   const handleDragEnd = () => {
@@ -719,10 +723,10 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
       {/* Minimal Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
-        <div className="max-w-[2000px] mx-auto px-8 py-6 pr-72">
-          <div className="grid grid-cols-3 items-center gap-8">
+        <div className="max-w-[2000px] mx-auto px-4 md:px-8 py-4 md:py-6 md:pr-72">
+          <div className="flex flex-col md:grid md:grid-cols-3 items-center gap-4 md:gap-8">
             {/* Left: Back */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full md:w-auto">
               <Link
                 href="/"
                 className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light"
@@ -733,7 +737,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             </div>
 
             {/* Center: Album Name */}
-            <div className="flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center justify-center w-full">
               {editingAlbumName ? (
                 <input
                   type="text"
@@ -747,13 +751,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       setAlbumName(album.name);
                     }
                   }}
-                  className="text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2"
+                  className="text-2xl md:text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2 w-full"
                   style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
                   autoFocus
                 />
               ) : (
                 <h1
-                  className="text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
+                  className="text-2xl md:text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
                   onClick={() => setEditingAlbumName(true)}
                   title="Click to edit"
                   style={{ fontWeight: 200 }}
@@ -767,26 +771,28 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             </div>
 
             {/* Right: Listen Mode + Add + Delete */}
-            <div className="flex items-center justify-end gap-4">
+            <div className="flex items-center justify-center md:justify-end gap-2 md:gap-4 w-full md:w-auto">
               <button
                 onClick={() => setShowListenMode(true)}
-                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
                 style={{ color: 'var(--accent)' }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 <Headphones className="w-3 h-3" />
-                <span>Listen Mode</span>
+                <span className="hidden sm:inline">Listen Mode</span>
+                <span className="sm:hidden">Listen</span>
               </button>
               <button
                 onClick={handleAddSong}
-                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
                 style={{ color: 'var(--accent)' }}
                 onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
                 onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
               >
                 <Plus className="w-3 h-3" />
-                <span>Add Track</span>
+                <span className="hidden sm:inline">Add Track</span>
+                <span className="sm:hidden">Add</span>
               </button>
             </div>
           </div>
@@ -794,9 +800,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {/* Content */}
-      <div className="max-w-[2000px] mx-auto px-8 py-12">
+      <div className="max-w-[2000px] mx-auto px-4 md:px-8 py-6 md:py-12">
         {album.songs.length === 0 ? (
-          <div className="text-center py-32">
+          <div className="text-center py-16 md:py-32">
             <div className="w-2 h-2 rounded-full mx-auto mb-8 opacity-20" style={{ background: 'var(--accent)' }}></div>
             <p className="text-sm opacity-40 font-light tracking-wide mb-12">No tracks yet</p>
             <button
@@ -861,151 +867,203 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 }}
               >
                 {/* Main Track Row */}
-                <div className="flex items-center gap-8 px-8 py-6 border-b" style={{ borderColor: 'var(--border)' }}>
-                  {/* Track # + Play */}
-                  <div className="flex items-center gap-6">
-                    <div className="text-xs opacity-30 font-light w-8 text-center">{String(index + 1).padStart(2, '0')}</div>
-                    {getAudioFile(song) ? (
-                      playingSong === song.id ? (
-                        <button
-                          onClick={() => setPlayingSong(null)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
-                          style={{ background: 'var(--accent)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                          title="Close player"
-                        >
-                          <X className="w-3 h-3 text-white" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => setPlayingSong(song.id)}
-                          className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
-                          style={{ background: 'var(--accent)' }}
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                          title="Play"
-                        >
-                          <Play className="w-3 h-3 text-white ml-0.5" />
-                        </button>
-                      )
-                    ) : (
-                      <div className="w-2 h-2 rounded-full opacity-20" style={{ background: 'var(--accent)' }}></div>
-                    )}
-                    {/* Delete Song Button */}
-                    <button
-                      onClick={() => handleDeleteSong(song.id, song.title)}
-                      className="w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-40"
-                      title="Delete track"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-
-                  {/* Title */}
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={getValue(song.id, "title", song.title)}
-                      onChange={(e) => handleUpdateSong(song.id, "title", e.target.value)}
-                      onBlur={() => handleBlur(song.id, "title")}
-                      className="w-full bg-transparent border-none focus:outline-none font-light text-lg tracking-tight"
-                      style={{ color: 'var(--foreground)', fontWeight: 300 }}
-                      placeholder="Untitled"
-                    />
-                  </div>
-
-                  {/* Status */}
-                  <div className="w-32">
-                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
-                      Status
-                    </div>
-                    <select
-                      value={song.progress}
-                      onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
-                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded focus:outline-none transition-all hover:opacity-90"
-                      style={{
-                        background: getProgressColor(song.progress),
-                        color: 'white',
-                        border: 'none'
-                      }}
-                    >
-                      <option>Voice Memo</option>
-                      <option>In Progress</option>
-                      <option>Recording</option>
-                      <option>Mixing</option>
-                      <option>Mastering</option>
-                      <option>Complete</option>
-                    </select>
-                  </div>
-
-                  {/* Logic File */}
-                  <div className="w-28">
-                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
-                      Logic File
-                    </div>
-                    <button
-                      onClick={() => setFileManagerOpen({ songId: song.id, type: "logic", songTitle: song.title })}
-                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
-                      style={{ background: getLogicFile(song) ? 'var(--accent)' : 'var(--border)', color: getLogicFile(song) ? 'white' : 'var(--foreground)' }}
-                    >
-                      {getLogicFile(song) ? `${song.files.filter((f: any) => f.type === "logic").length} Files` : 'Upload'}
-                    </button>
-                    {uploadProgress[song.id] && Object.keys(uploadProgress[song.id]).length > 0 && (
-                      <div className="mt-2 space-y-1 px-0.5">
-                        {Object.entries(uploadProgress[song.id]).map(([fileKey, { progress, status, fileName }]) => (
-                          <div key={fileKey} className="text-[9px]">
-                            <div className="flex items-center justify-between mb-0.5 px-0.5">
-                              <span className="opacity-60 truncate max-w-[70px]" title={fileName}>{fileName}</span>
-                              <span className="opacity-40 text-[8px]">{Math.round(progress)}%</span>
-                            </div>
-                            <div className="w-full h-0.5 bg-black/20 rounded-full overflow-hidden">
-                              <div
-                                className="h-full transition-all duration-300"
-                                style={{
-                                  width: `${Math.max(progress, 5)}%`,
-                                  background: 'var(--accent)'
-                                }}
-                              />
-                            </div>
-                            <div className="opacity-30 mt-0.5 px-0.5 text-[8px]">{status}</div>
-                          </div>
-                        ))}
+                <div className="px-4 md:px-8 py-4 md:py-6 border-b" style={{ borderColor: 'var(--border)' }}>
+                  <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+                    {/* Mobile: Track # + Title + Play */}
+                    <div className="flex items-center gap-4 md:hidden">
+                      <div className="text-xs opacity-30 font-light w-6">{String(index + 1).padStart(2, '0')}</div>
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={getValue(song.id, "title", song.title)}
+                          onChange={(e) => handleUpdateSong(song.id, "title", e.target.value)}
+                          onBlur={() => handleBlur(song.id, "title")}
+                          className="w-full bg-transparent border-none focus:outline-none font-light text-base tracking-tight"
+                          style={{ color: 'var(--foreground)', fontWeight: 300 }}
+                          placeholder="Untitled"
+                        />
                       </div>
-                    )}
+                      {getAudioFile(song) ? (
+                        playingSong === song.id ? (
+                          <button
+                            onClick={() => setPlayingSong(null)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity flex-shrink-0"
+                            style={{ background: 'var(--accent)' }}
+                            title="Close player"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setPlayingSong(song.id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity flex-shrink-0"
+                            style={{ background: 'var(--accent)' }}
+                            title="Play"
+                          >
+                            <Play className="w-3 h-3 text-white ml-0.5" />
+                          </button>
+                        )
+                      ) : (
+                        <div className="w-2 h-2 rounded-full opacity-20 flex-shrink-0" style={{ background: 'var(--accent)' }}></div>
+                      )}
+                      <button
+                        onClick={() => handleDeleteSong(song.id, song.title)}
+                        className="w-6 h-6 flex items-center justify-center opacity-40 flex-shrink-0"
+                        title="Delete track"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Desktop: Track # + Play + Delete */}
+                    <div className="hidden md:flex items-center gap-6">
+                      <div className="text-xs opacity-30 font-light w-8 text-center">{String(index + 1).padStart(2, '0')}</div>
+                      {getAudioFile(song) ? (
+                        playingSong === song.id ? (
+                          <button
+                            onClick={() => setPlayingSong(null)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
+                            style={{ background: 'var(--accent)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                            title="Close player"
+                          >
+                            <X className="w-3 h-3 text-white" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setPlayingSong(song.id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
+                            style={{ background: 'var(--accent)' }}
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                            title="Play"
+                          >
+                            <Play className="w-3 h-3 text-white ml-0.5" />
+                          </button>
+                        )
+                      ) : (
+                        <div className="w-2 h-2 rounded-full opacity-20" style={{ background: 'var(--accent)' }}></div>
+                      )}
+                      <button
+                        onClick={() => handleDeleteSong(song.id, song.title)}
+                        className="w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-40"
+                        title="Delete track"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Desktop: Title */}
+                    <div className="hidden md:flex flex-1">
+                      <input
+                        type="text"
+                        value={getValue(song.id, "title", song.title)}
+                        onChange={(e) => handleUpdateSong(song.id, "title", e.target.value)}
+                        onBlur={() => handleBlur(song.id, "title")}
+                        className="w-full bg-transparent border-none focus:outline-none font-light text-lg tracking-tight"
+                        style={{ color: 'var(--foreground)', fontWeight: 300 }}
+                        placeholder="Untitled"
+                      />
+                    </div>
+
+                    {/* Mobile + Desktop: Controls Grid */}
+                    <div className="grid grid-cols-2 md:flex md:items-start gap-3 md:gap-4">
+                      {/* Status */}
+                      <div className="w-full md:w-32">
+                        <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                          Status
+                        </div>
+                        <select
+                          value={song.progress}
+                          onChange={(e) => handleUpdateSong(song.id, "progress", e.target.value)}
+                          className="w-full px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded focus:outline-none transition-all hover:opacity-90"
+                          style={{
+                            background: getProgressColor(song.progress),
+                            color: 'white',
+                            border: 'none'
+                          }}
+                        >
+                          <option>Voice Memo</option>
+                          <option>In Progress</option>
+                          <option>Recording</option>
+                          <option>Mixing</option>
+                          <option>Mastering</option>
+                          <option>Complete</option>
+                        </select>
+                      </div>
+
+                      {/* Logic File */}
+                      <div className="w-full md:w-28">
+                        <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                          Logic
+                        </div>
+                        <button
+                          onClick={() => setFileManagerOpen({ songId: song.id, type: "logic", songTitle: song.title })}
+                          className="w-full px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                          style={{ background: getLogicFile(song) ? 'var(--accent)' : 'var(--border)', color: getLogicFile(song) ? 'white' : 'var(--foreground)' }}
+                        >
+                          {getLogicFile(song) ? `${song.files.filter((f: any) => f.type === "logic").length} Files` : 'Upload'}
+                        </button>
+                      </div>
+
+                      {/* Audio Bounce */}
+                      <div className="w-full md:w-28">
+                        <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                          Audio
+                        </div>
+                        <button
+                          onClick={() => setFileManagerOpen({ songId: song.id, type: "audio", songTitle: song.title })}
+                          className="w-full px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
+                          style={{ background: getAudioFile(song) ? 'var(--accent)' : 'var(--border)', color: getAudioFile(song) ? 'white' : 'var(--foreground)' }}
+                        >
+                          {getAudioFile(song) ? `${song.files.filter((f: any) => f.type === "audio").length} Files` : 'Upload'}
+                        </button>
+                      </div>
+
+                      {/* Version History */}
+                      <div className="w-full md:w-32">
+                        <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                          History
+                        </div>
+                        <VersionHistory
+                          songId={song.id}
+                          songTitle={song.title}
+                          versions={song.versions || []}
+                          onRestore={loadAlbum}
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Audio Bounce */}
-                  <div className="w-28">
-                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
-                      Audio Bounce
+                  {/* Upload Progress (all devices) */}
+                  {uploadProgress[song.id] && Object.keys(uploadProgress[song.id]).length > 0 && (
+                    <div className="mt-3 space-y-1 px-0.5">
+                      {Object.entries(uploadProgress[song.id]).map(([fileKey, { progress, status, fileName }]) => (
+                        <div key={fileKey} className="text-[9px]">
+                          <div className="flex items-center justify-between mb-0.5 px-0.5">
+                            <span className="opacity-60 truncate max-w-[150px] md:max-w-[70px]" title={fileName}>{fileName}</span>
+                            <span className="opacity-40 text-[8px]">{Math.round(progress)}%</span>
+                          </div>
+                          <div className="w-full h-0.5 bg-black/20 rounded-full overflow-hidden">
+                            <div
+                              className="h-full transition-all duration-300"
+                              style={{
+                                width: `${Math.max(progress, 5)}%`,
+                                background: 'var(--accent)'
+                              }}
+                            />
+                          </div>
+                          <div className="opacity-30 mt-0.5 px-0.5 text-[8px]">{status}</div>
+                        </div>
+                      ))}
                     </div>
-                    <button
-                      onClick={() => setFileManagerOpen({ songId: song.id, type: "audio", songTitle: song.title })}
-                      className="w-full px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity hover:opacity-80"
-                      style={{ background: getAudioFile(song) ? 'var(--accent)' : 'var(--border)', color: getAudioFile(song) ? 'white' : 'var(--foreground)' }}
-                    >
-                      {getAudioFile(song) ? `${song.files.filter((f: any) => f.type === "audio").length} Files` : 'Upload'}
-                    </button>
-                  </div>
-
-                  {/* Version History */}
-                  <div className="w-32">
-                    <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
-                      History
-                    </div>
-                    <VersionHistory
-                      songId={song.id}
-                      songTitle={song.title}
-                      versions={song.versions || []}
-                      onRestore={loadAlbum}
-                    />
-                  </div>
+                  )}
                 </div>
 
                 {/* Audio Player */}
                 {playingSong === song.id && getAudioFile(song) && (
-                  <div className="px-8 py-4 border-b" style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
+                  <div className="px-4 md:px-8 py-4 border-b" style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
                     <WaveformPlayer
                       url={getAudioFile(song).url}
                       filename={getAudioFile(song).name}
@@ -1015,9 +1073,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 )}
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
                   {/* Notes */}
-                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                  <div className="p-4 md:p-6" style={{ background: 'var(--background)' }}>
                     <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light mb-4">
                       Notes
                     </label>
@@ -1026,13 +1084,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       onChange={(e) => handleUpdateSong(song.id, "notes", e.target.value)}
                       onBlur={() => handleBlur(song.id, "notes")}
                       placeholder="..."
-                      className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
+                      className="w-full h-32 md:h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
                       style={{ color: 'var(--foreground)' }}
                     />
                   </div>
 
                   {/* Lyrics */}
-                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                  <div className="p-4 md:p-6" style={{ background: 'var(--background)' }}>
                     <label className="block text-xs opacity-30 uppercase tracking-[0.2em] font-light mb-4">
                       Lyrics
                     </label>
@@ -1041,13 +1099,13 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       onChange={(e) => handleUpdateSong(song.id, "lyrics", e.target.value)}
                       onBlur={() => handleBlur(song.id, "lyrics")}
                       placeholder="..."
-                      className="w-full h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
+                      className="w-full h-32 md:h-40 text-sm font-light bg-transparent border-none focus:outline-none resize-none leading-relaxed"
                       style={{ color: 'var(--foreground)' }}
                     />
                   </div>
 
                   {/* References */}
-                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                  <div className="p-4 md:p-6" style={{ background: 'var(--background)' }}>
                     <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       References
                     </label>
@@ -1202,7 +1260,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   </div>
 
                   {/* Comments */}
-                  <div className="p-6" style={{ background: 'var(--background)' }}>
+                  <div className="p-4 md:p-6" style={{ background: 'var(--background)' }}>
                     <label className="block text-xs opacity-30 mb-4 uppercase tracking-[0.2em] font-light">
                       Comments
                     </label>
