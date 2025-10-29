@@ -63,6 +63,11 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
         setCurrentTime(formatTime(wavesurfer.getCurrentTime()));
       });
 
+      // timeupdate works for both WebAudio and MediaElement backends
+      wavesurfer.on("timeupdate", (time: number) => {
+        setCurrentTime(formatTime(time));
+      });
+
       wavesurfer.on("play", () => setIsPlaying(true));
       wavesurfer.on("pause", () => setIsPlaying(false));
       wavesurfer.on("finish", () => {
