@@ -7,6 +7,7 @@ import {
   Music,
   Play,
   Pause,
+  X,
   Loader2,
   ExternalLink,
   Youtube,
