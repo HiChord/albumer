@@ -74,14 +74,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     // Auto-refresh every 30 seconds, but only if not editing or playing
     const interval = setInterval(() => {
       // Don't refresh if user is editing (has typing debounce active) or if audio is playing
-      const hasActiveEdits = Object.keys(editingValues).length > 0;
-      if (!hasActiveEdits && !playingSong) {
+      const hasActiveEdits = Object.keys(editingValuesRef.current).length > 0;
+      if (!hasActiveEdits && !playingSongRef.current) {
         loadAlbum();
       }
     }, 30000); // Increased to 30 seconds
 
     return () => clearInterval(interval);
-  }, [resolvedParams.id, editingValues, playingSong]);
+  }, [resolvedParams.id]); // Only depend on the album ID, not editing state
 
   const loadAlbum = async () => {
     setLoading(true);
@@ -119,8 +119,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     window.location.href = "/";
   };
 
-  // Debounce timers
+  // Debounce timers and refs to track current state for interval
   const debounceTimers = useRef<{ [key: string]: NodeJS.Timeout }>({});
+  const editingValuesRef = useRef(editingValues);
+  const playingSongRef = useRef(playingSong);
+
+  // Update refs when state changes
+  useEffect(() => {
+    editingValuesRef.current = editingValues;
+  }, [editingValues]);
+
+  useEffect(() => {
+    playingSongRef.current = playingSong;
+  }, [playingSong]);
 
   const handleUpdateSong = async (songId: string, field: string, value: any) => {
     // Update local state immediately for responsive UI
