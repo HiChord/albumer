@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS files (
 );
 
 -- References table
-CREATE TABLE IF NOT EXISTS references (
+CREATE TABLE IF NOT EXISTS "references" (
   id TEXT PRIMARY KEY,
   type TEXT NOT NULL CHECK (type IN ('spotify', 'youtube')),
   title TEXT NOT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS versions (
 -- Create indexes for better query performance
 CREATE INDEX IF NOT EXISTS idx_songs_albumId ON songs("albumId");
 CREATE INDEX IF NOT EXISTS idx_files_songId ON files("songId");
-CREATE INDEX IF NOT EXISTS idx_references_songId ON references("songId");
+CREATE INDEX IF NOT EXISTS idx_references_songId ON "references"("songId");
 CREATE INDEX IF NOT EXISTS idx_comments_songId ON comments("songId");
 CREATE INDEX IF NOT EXISTS idx_versions_songId ON versions("songId");
 
@@ -83,7 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_versions_songId ON versions("songId");
 ALTER TABLE albums ENABLE ROW LEVEL SECURITY;
 ALTER TABLE songs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE files ENABLE ROW LEVEL SECURITY;
-ALTER TABLE references ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "references" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE versions ENABLE ROW LEVEL SECURITY;
 
@@ -105,10 +105,10 @@ CREATE POLICY "Allow public insert access on files" ON files FOR INSERT WITH CHE
 CREATE POLICY "Allow public update access on files" ON files FOR UPDATE USING (true);
 CREATE POLICY "Allow public delete access on files" ON files FOR DELETE USING (true);
 
-CREATE POLICY "Allow public read access on references" ON references FOR SELECT USING (true);
-CREATE POLICY "Allow public insert access on references" ON references FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow public update access on references" ON references FOR UPDATE USING (true);
-CREATE POLICY "Allow public delete access on references" ON references FOR DELETE USING (true);
+CREATE POLICY "Allow public read access on references" ON "references" FOR SELECT USING (true);
+CREATE POLICY "Allow public insert access on references" ON "references" FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow public update access on references" ON "references" FOR UPDATE USING (true);
+CREATE POLICY "Allow public delete access on references" ON "references" FOR DELETE USING (true);
 
 CREATE POLICY "Allow public read access on comments" ON comments FOR SELECT USING (true);
 CREATE POLICY "Allow public insert access on comments" ON comments FOR INSERT WITH CHECK (true);

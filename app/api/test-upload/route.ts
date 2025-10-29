@@ -11,7 +11,7 @@ export async function GET() {
     // Try to upload a simple test file
     const testData = new TextEncoder().encode("test file content");
     const { data, error } = await supabase.storage
-      .from("audio-files")
+      .from("Audio-files")
       .upload(`test-${Date.now()}.txt`, testData, {
         contentType: "text/plain",
         upsert: false,
