@@ -68,19 +68,9 @@ export default function FileManager({
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("=== handleFileSelect CALLED ===");
-    console.log("Event:", e);
-    console.log("Files:", e.target.files);
-
     const selectedFiles = Array.from(e.target.files || []);
-    console.log("Selected files array:", selectedFiles);
+    if (selectedFiles.length === 0) return;
 
-    if (selectedFiles.length === 0) {
-      console.log("No files selected, aborting");
-      return;
-    }
-
-    console.log(`Starting upload of ${selectedFiles.length} files for type: ${type}`);
     setIsUploading(true);
     const uploadedFiles: any[] = [];
 
@@ -98,9 +88,6 @@ export default function FileManager({
       const fileKey = `${file.name}-${i}`;
 
       try {
-        // Show initial progress
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 10 }));
-
         // Generate unique filename
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
@@ -113,16 +100,15 @@ export default function FileManager({
         // Determine bucket based on type prop
         const bucketName = type === "logic" ? "Logic-files" : "Audio-files";
 
-        console.log(`Uploading ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB) to ${bucketName} bucket`);
-
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 25 }));
+        // Show file size and start upload indicator
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(1);
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 1 }));
 
         // Convert to bytes
         const bytes = await file.arrayBuffer();
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 15 }));
 
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 50 }));
-
-        // Upload to Supabase Storage
+        // Upload to Supabase Storage (this is the slow part for large files)
         const { data, error} = await supabase.storage
           .from(bucketName)
           .upload(uniqueFilename, bytes, {
@@ -130,7 +116,7 @@ export default function FileManager({
             upsert: false,
           });
 
-        setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
+        setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
 
         if (error) {
           console.error("Supabase upload error:", error);
@@ -329,20 +315,30 @@ export default function FileManager({
                 {isUploading ? "Uploading..." : "Upload New File"}
               </label>
               {isUploading && Object.keys(uploadProgress).length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {Object.entries(uploadProgress).map(([key, progress]) => {
                     const fileName = key.split('-').slice(0, -1).join('-');
+                    const isStuck = progress > 10 && progress < 100;
                     return (
-                      <div key={key} className="text-xs">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="opacity-60 truncate max-w-[200px]">{fileName}</span>
-                          <span className="opacity-40">{Math.round(progress)}%</span>
+                      <div key={key} className="text-xs space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="opacity-60 truncate max-w-[180px]" title={fileName}>{fileName}</span>
+                          <span className="opacity-40">
+                            {progress < 100 ? (
+                              isStuck ? 'Uploading...' : `${Math.round(progress)}%`
+                            ) : 'Done!'}
+                          </span>
                         </div>
+                        {isStuck && (
+                          <div className="text-[10px] opacity-30">
+                            Large file - this may take a few minutes...
+                          </div>
+                        )}
                         <div className="w-full h-1 bg-black/20 rounded-full overflow-hidden">
                           <div
-                            className="h-full transition-all duration-300"
+                            className={`h-full transition-all ${isStuck ? 'animate-pulse' : 'duration-300'}`}
                             style={{
-                              width: `${progress}%`,
+                              width: `${Math.max(progress, 15)}%`,
                               background: 'var(--accent)'
                             }}
                           />
