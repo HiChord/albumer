@@ -96,6 +96,9 @@ export default function FileManager({
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Preparing...' }));
         console.log(`Starting upload: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
 
+        // Wait a tick to ensure UI updates
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         // Generate unique filename
         const timestamp = Date.now();
         const randomStr = Math.random().toString(36).substring(2, 8);
@@ -111,14 +114,20 @@ export default function FileManager({
 
         // Convert to bytes (this can take time for large files)
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Reading file...' }));
+        console.log(`Converting ${file.name} to buffer (this may take a while for large files)...`);
+
+        const startTime = Date.now();
         const bytes = await file.arrayBuffer();
-        console.log(`File converted to buffer: ${bytes.byteLength} bytes`);
+        const conversionTime = ((Date.now() - startTime) / 1000).toFixed(1);
+        console.log(`File converted to buffer: ${bytes.byteLength} bytes (took ${conversionTime}s)`);
 
         setUploadProgress(prev => ({ ...prev, [fileKey]: 10 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Uploading to storage...' }));
 
         // Upload to Supabase Storage (this is the slow part for large files)
-        console.log(`Starting Supabase upload...`);
+        console.log(`Starting Supabase upload to ${bucketName}...`);
+        const uploadStartTime = Date.now();
+
         const { data, error} = await supabase.storage
           .from(bucketName)
           .upload(uniqueFilename, bytes, {
@@ -126,10 +135,20 @@ export default function FileManager({
             upsert: false,
           });
 
+        const uploadTime = ((Date.now() - uploadStartTime) / 1000).toFixed(1);
+
         if (error) {
           console.error("Supabase upload error:", error);
+          console.error("Error details:", {
+            message: error.message,
+            name: error.name,
+            statusCode: (error as any).statusCode,
+            stack: error.stack
+          });
           throw new Error(error.message);
         }
+
+        console.log(`Supabase upload completed in ${uploadTime}s`);
 
         console.log(`Upload successful! File: ${uniqueFilename}`);
         setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
