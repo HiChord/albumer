@@ -138,3 +138,4 @@ MIT
 
 Made with ❤️ for musicians who just want to make music, not manage infrastructure.
 
+# Trigger deployment after repo visibility change
