@@ -5,7 +5,7 @@ import { Upload, Music, File } from "lucide-react";
 
 interface DragDropOverlayProps {
   isDragging: boolean;
-  onDrop: (files: FileList) => void;
+  onDrop: (e: React.DragEvent) => void;
 }
 
 export default function DragDropOverlay({ isDragging, onDrop }: DragDropOverlayProps) {
