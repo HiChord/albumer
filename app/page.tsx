@@ -75,9 +75,10 @@ export default function Home() {
           <div className="flex items-center justify-center mb-8">
             <div className="w-3 h-3 rounded-full opacity-60" style={{ background: 'var(--accent)' }}></div>
           </div>
-          <h1 className="text-7xl md:text-8xl font-light tracking-tight text-center mb-6" style={{ fontWeight: 200 }}>
+          <h1 className="text-7xl md:text-8xl font-light tracking-tight text-center mb-2" style={{ fontWeight: 200 }}>
             Wild Rivers :)
           </h1>
+          <p className="text-sm opacity-40 uppercase tracking-wider text-center">Album HQ</p>
         </div>
       </div>
 

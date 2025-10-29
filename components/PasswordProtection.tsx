@@ -60,7 +60,7 @@ export default function PasswordProtection({ children }: PasswordProtectionProps
           <div className="text-center mb-8">
             <div className="w-3 h-3 rounded-full mx-auto mb-6 opacity-60" style={{ background: '#d4a574' }}></div>
             <h1 className="text-5xl font-light tracking-tight mb-4" style={{ fontWeight: 200 }}>
-              Albumer
+              time to cook &lt;3
             </h1>
             <p className="text-sm opacity-40 uppercase tracking-wider">Password Protected</p>
           </div>
