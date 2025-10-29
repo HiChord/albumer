@@ -419,6 +419,50 @@ export async function createFile(
   return insertedFile;
 }
 
+export async function deleteFile(fileId: string): Promise<void> {
+  const supabase = getSupabaseClient();
+
+  // Get file info before deleting
+  const { data: file, error: fetchError } = await supabase
+    .from("files")
+    .select("*, songId")
+    .eq("id", fileId)
+    .single();
+
+  if (fetchError || !file) {
+    throw new Error(`Error fetching file: ${fetchError?.message}`);
+  }
+
+  // Delete from Supabase Storage if externalId exists
+  if (file.externalId) {
+    const { error: storageError } = await supabase.storage
+      .from("Audio-files")
+      .remove([file.externalId]);
+
+    if (storageError) {
+      console.error("Error deleting from storage:", storageError);
+      // Continue with database deletion even if storage deletion fails
+    }
+  }
+
+  // Delete from database
+  const { error: deleteError } = await supabase
+    .from("files")
+    .delete()
+    .eq("id", fileId);
+
+  if (deleteError) {
+    throw new Error(`Error deleting file: ${deleteError.message}`);
+  }
+
+  // Create version
+  await createVersion(file.songId, `Deleted ${file.type} file`, file.name, "User");
+
+  // Touch song's album
+  const song = await getSongById(file.songId);
+  if (song) await touchAlbum(song.albumId);
+}
+
 // Reference Operations
 export async function getAllReferences(): Promise<Reference[]> {
   const supabase = getSupabaseClient();

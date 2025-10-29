@@ -29,6 +29,7 @@ import {
   searchSpotify,
   searchYouTube,
   addFile,
+  deleteFile,
   updateAlbum,
   deleteAlbum,
   reorderSongs
@@ -517,6 +518,11 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     await loadAlbum();
   };
 
+  const handleFileDelete = async (fileId: string, songId: string) => {
+    await deleteFile(fileId, songId);
+    await loadAlbum();
+  };
+
   const themeClass = `theme-${currentUser.toLowerCase()}`;
 
   if (loading || !album) {
@@ -560,6 +566,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               ?.files.filter((f: any) => f.type === fileManagerOpen.type) || []
           }
           onUpload={(files) => handleFileManagerUpload(fileManagerOpen.songId, fileManagerOpen.type, files)}
+          onDelete={(fileId) => handleFileDelete(fileId, fileManagerOpen.songId)}
           onClose={() => setFileManagerOpen(null)}
         />
       )}

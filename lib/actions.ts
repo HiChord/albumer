@@ -162,6 +162,15 @@ export async function addFile(
   return file;
 }
 
+export async function deleteFile(fileId: string, songId: string) {
+  await storage.deleteFile(fileId);
+
+  const song = await storage.getSongById(songId);
+  if (song) {
+    revalidatePath(`/album/${song.albumId}`);
+  }
+}
+
 // Reference Actions
 export async function addReference(
   songId: string,

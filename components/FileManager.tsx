@@ -19,6 +19,7 @@ interface FileManagerProps {
   type: "audio" | "logic";
   files: FileWithHistory[];
   onUpload: (files: { name: string; url: string; size: number; mimeType: string; externalId?: string }[]) => void;
+  onDelete: (fileId: string) => void;
   onClose: () => void;
 }
 
@@ -28,6 +29,7 @@ export default function FileManager({
   type,
   files,
   onUpload,
+  onDelete,
   onClose,
 }: FileManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
@@ -225,6 +227,17 @@ export default function FileManager({
                     >
                       <Download className="w-4 h-4" />
                     </a>
+                    <button
+                      onClick={() => {
+                        if (confirm(`Delete ${file.name}? This cannot be undone.`)) {
+                          onDelete(file.id);
+                        }
+                      }}
+                      className="p-2 opacity-60 hover:opacity-100 transition-opacity"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
