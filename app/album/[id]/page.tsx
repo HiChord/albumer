@@ -731,19 +731,29 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   <div className="flex items-center gap-6">
                     <div className="text-xs opacity-30 font-light w-8 text-center">{String(index + 1).padStart(2, '0')}</div>
                     {getAudioFile(song) ? (
-                      <button
-                        onClick={() => setPlayingSong(playingSong === song.id ? null : song.id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
-                        style={{ background: 'var(--accent)' }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                      >
-                        {playingSong === song.id ? (
-                          <Pause className="w-3 h-3 text-white" />
-                        ) : (
+                      playingSong === song.id ? (
+                        <button
+                          onClick={() => setPlayingSong(null)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
+                          style={{ background: 'var(--accent)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                          title="Close player"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setPlayingSong(song.id)}
+                          className="w-8 h-8 flex items-center justify-center rounded-full transition-opacity"
+                          style={{ background: 'var(--accent)' }}
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                          title="Play"
+                        >
                           <Play className="w-3 h-3 text-white ml-0.5" />
-                        )}
-                      </button>
+                        </button>
+                      )
                     ) : (
                       <div className="w-2 h-2 rounded-full opacity-20" style={{ background: 'var(--accent)' }}></div>
                     )}
