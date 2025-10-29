@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { X, Play, Pause, SkipForward, SkipBack, Volume2, VolumeX, Music } from "lucide-react";
-import WaveSurfer from "wavesurfer.js";
 
 interface AudioFile {
   id: string;
@@ -33,7 +32,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const waveformRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
+  const wavesurferRef = useRef<any>(null);
 
   useEffect(() => {
     setPlaylist(audioFiles);
@@ -83,59 +82,73 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
   // Initialize WaveSurfer for waveform visualization
   useEffect(() => {
     const currentFile = playlist[currentIndex];
-    if (!waveformRef.current || !audioRef.current || !currentFile) return;
+    if (!waveformRef.current || !currentFile) return;
 
     setWaveformReady(false);
 
     // Clean up previous instance
     if (wavesurferRef.current) {
-      wavesurferRef.current.destroy();
+      try {
+        wavesurferRef.current.destroy();
+      } catch (err) {
+        console.error("Error destroying wavesurfer:", err);
+      }
       wavesurferRef.current = null;
     }
 
     // Detect if mobile device
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-    // Create new WaveSurfer instance
-    const wavesurfer = WaveSurfer.create({
-      container: waveformRef.current,
-      waveColor: "var(--accent-muted, rgba(212, 165, 116, 0.3))",
-      progressColor: "var(--accent, #d4a574)",
-      cursorColor: "var(--accent, #d4a574)",
-      barWidth: 2,
-      barRadius: 3,
-      barGap: 2,
-      height: 80,
-      normalize: true,
-      backend: isMobile ? "MediaElement" : "WebAudio",
-      mediaControls: false,
-      interact: true,
-    });
+    // Dynamically import wavesurfer to avoid SSR issues
+    import("wavesurfer.js").then((WaveSurfer) => {
+      if (!waveformRef.current) return;
 
-    wavesurfer.load(currentFile.url);
+      const wavesurfer = WaveSurfer.default.create({
+        container: waveformRef.current,
+        waveColor: "rgba(212, 165, 116, 0.3)",
+        progressColor: "#d4a574",
+        cursorColor: "#d4a574",
+        barWidth: 2,
+        barRadius: 3,
+        barGap: 2,
+        height: 80,
+        normalize: true,
+        backend: isMobile ? "MediaElement" : "WebAudio",
+        mediaControls: false,
+      });
 
-    wavesurfer.on("ready", () => {
-      setWaveformReady(true);
-    });
+      wavesurfer.load(currentFile.url);
 
-    wavesurfer.on("error", (err) => {
-      console.error("WaveSurfer error:", err);
+      wavesurfer.on("ready", () => {
+        setWaveformReady(true);
+      });
+
+      wavesurfer.on("error", (err: any) => {
+        console.error("WaveSurfer error:", err);
+        setWaveformReady(false);
+      });
+
+      // Sync WaveSurfer with native audio element
+      wavesurfer.on("interaction", () => {
+        const audio = audioRef.current;
+        if (audio) {
+          audio.currentTime = wavesurfer.getCurrentTime();
+        }
+      });
+
+      wavesurferRef.current = wavesurfer;
+    }).catch((err) => {
+      console.error("Failed to load WaveSurfer:", err);
       setWaveformReady(false);
     });
 
-    // Sync WaveSurfer with native audio element
-    wavesurfer.on("interaction", () => {
-      const audio = audioRef.current;
-      if (audio) {
-        audio.currentTime = wavesurfer.getCurrentTime();
-      }
-    });
-
-    wavesurferRef.current = wavesurfer;
-
     return () => {
       if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
+        try {
+          wavesurferRef.current.destroy();
+        } catch (err) {
+          console.error("Error destroying wavesurfer:", err);
+        }
         wavesurferRef.current = null;
       }
     };
