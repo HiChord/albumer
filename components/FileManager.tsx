@@ -21,6 +21,8 @@ interface FileManagerProps {
   onUpload: (files: { name: string; url: string; size: number; mimeType: string; externalId?: string }[]) => void;
   onDelete: (fileId: string) => void;
   onClose: () => void;
+  onUploadProgress?: (fileKey: string, progress: number, status: string, fileName: string) => void;
+  onUploadStart?: () => void;
 }
 
 export default function FileManager({
@@ -31,6 +33,8 @@ export default function FileManager({
   onUpload,
   onDelete,
   onClose,
+  onUploadProgress,
+  onUploadStart,
 }: FileManagerProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{[key: string]: number}>({});
@@ -77,6 +81,12 @@ export default function FileManager({
     setUploadError(null);
     const uploadedFiles: any[] = [];
 
+    // Close modal immediately and start background upload
+    if (onUploadStart) {
+      onUploadStart();
+      onClose(); // Close the modal
+    }
+
     // Dynamic import to avoid SSR issues
     const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient(
@@ -94,6 +104,9 @@ export default function FileManager({
         // Show immediate feedback
         setUploadProgress(prev => ({ ...prev, [fileKey]: 0 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Preparing...' }));
+        if (onUploadProgress) {
+          onUploadProgress(fileKey, 0, 'Preparing...', file.name);
+        }
         console.log(`Starting upload: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)}MB)`);
 
         // Wait a tick to ensure UI updates
@@ -114,6 +127,9 @@ export default function FileManager({
 
         // Convert to bytes (this can take time for large files)
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Reading file...' }));
+        if (onUploadProgress) {
+          onUploadProgress(fileKey, 5, 'Reading file...', file.name);
+        }
         console.log(`Converting ${file.name} to buffer (this may take a while for large files)...`);
 
         const startTime = Date.now();
@@ -123,6 +139,9 @@ export default function FileManager({
 
         setUploadProgress(prev => ({ ...prev, [fileKey]: 10 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Uploading to storage...' }));
+        if (onUploadProgress) {
+          onUploadProgress(fileKey, 10, 'Uploading to storage...', file.name);
+        }
 
         // Upload to Supabase Storage (this is the slow part for large files)
         console.log(`Starting Supabase upload to ${bucketName}...`);
@@ -135,6 +154,9 @@ export default function FileManager({
           if (tickerActive && progressValue < 85) {
             progressValue += 5;
             setUploadProgress(prev => ({ ...prev, [fileKey]: progressValue }));
+            if (onUploadProgress) {
+              onUploadProgress(fileKey, progressValue, 'Uploading to storage...', file.name);
+            }
             const elapsedSecs = ((Date.now() - uploadStartTime) / 1000).toFixed(0);
             console.log(`Still uploading... ${elapsedSecs}s elapsed`);
           }
@@ -174,6 +196,9 @@ export default function FileManager({
         console.log(`Upload successful! File: ${uniqueFilename}`);
         setUploadProgress(prev => ({ ...prev, [fileKey]: 90 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Finalizing...' }));
+        if (onUploadProgress) {
+          onUploadProgress(fileKey, 90, 'Finalizing...', file.name);
+        }
 
         // Get public URL
         const { data: urlData } = supabase.storage
@@ -183,6 +208,9 @@ export default function FileManager({
         console.log(`Public URL: ${urlData.publicUrl}`);
         setUploadProgress(prev => ({ ...prev, [fileKey]: 100 }));
         setUploadStatus(prev => ({ ...prev, [fileKey]: 'Complete!' }));
+        if (onUploadProgress) {
+          onUploadProgress(fileKey, 100, 'Complete!', file.name);
+        }
 
         const uploadedFile = {
           name: file.name,

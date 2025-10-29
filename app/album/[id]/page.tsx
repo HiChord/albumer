@@ -71,6 +71,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [dragOverSongId, setDragOverSongId] = useState<string | null>(null);
   const [fileManagerOpen, setFileManagerOpen] = useState<{ songId: string; type: "audio" | "logic"; songTitle: string } | null>(null);
   const [youtubePlayer, setYoutubePlayer] = useState<{ videoId: string; title: string } | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ [songId: string]: { [fileKey: string]: { progress: number; status: string; fileName: string } } }>({});
 
   useEffect(() => {
     loadAlbum();
@@ -571,6 +572,18 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
           onUpload={(files) => handleFileManagerUpload(fileManagerOpen.songId, fileManagerOpen.type, files)}
           onDelete={(fileId) => handleFileDelete(fileId, fileManagerOpen.songId)}
           onClose={() => setFileManagerOpen(null)}
+          onUploadStart={() => {
+            // Modal will close immediately, upload continues in background
+          }}
+          onUploadProgress={(fileKey, progress, status, fileName) => {
+            setUploadProgress(prev => ({
+              ...prev,
+              [fileManagerOpen.songId]: {
+                ...(prev[fileManagerOpen.songId] || {}),
+                [fileKey]: { progress, status, fileName }
+              }
+            }));
+          }}
         />
       )}
 
@@ -815,6 +828,28 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     >
                       {getLogicFile(song) ? `${song.files.filter((f: any) => f.type === "logic").length} Files` : 'Upload'}
                     </button>
+                    {uploadProgress[song.id] && Object.keys(uploadProgress[song.id]).length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {Object.entries(uploadProgress[song.id]).map(([fileKey, { progress, status, fileName }]) => (
+                          <div key={fileKey} className="text-[9px]">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="opacity-60 truncate max-w-[80px]" title={fileName}>{fileName}</span>
+                              <span className="opacity-40">{Math.round(progress)}%</span>
+                            </div>
+                            <div className="w-full h-0.5 bg-black/20 rounded-full overflow-hidden">
+                              <div
+                                className="h-full transition-all duration-300"
+                                style={{
+                                  width: `${Math.max(progress, 5)}%`,
+                                  background: 'var(--accent)'
+                                }}
+                              />
+                            </div>
+                            <div className="opacity-30 mt-0.5">{status}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Audio Bounce */}
