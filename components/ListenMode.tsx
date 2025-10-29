@@ -55,15 +55,19 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
     // Pause all other audio/video elements when this starts playing
     const handlePlay = () => {
+      console.log('[ListenMode] Audio playing');
       // Pause all HTML audio/video elements
       const allMedia = document.querySelectorAll<HTMLMediaElement>('audio, video');
+      console.log('[ListenMode] Found audio elements:', allMedia.length);
       allMedia.forEach((media) => {
         if (media !== audio && !media.paused) {
+          console.log('[ListenMode] Pausing other audio element');
           media.pause();
         }
       });
 
       // Dispatch custom event to pause all WaveSurfer players
+      console.log('[ListenMode] Dispatching pause-all-players event');
       window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: 'listen-mode' } }));
     };
 
@@ -170,6 +174,28 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
     };
   }, [playlist, currentIndex]);
 
+  // Listen for pause events from track players (runs immediately on mount)
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('[ListenMode] Received pause event from:', customEvent.detail.source);
+      if (customEvent.detail.source !== 'listen-mode') {
+        console.log('[ListenMode] Pausing audio');
+        audio.pause();
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('pause-all-players', handlePauseEvent);
+
+    return () => {
+      window.removeEventListener('pause-all-players', handlePauseEvent);
+    };
+  }, []);
+
   // Sync WaveSurfer playback state with audio element
   useEffect(() => {
     const audio = audioRef.current;
@@ -185,21 +211,10 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
       }
     };
 
-    // Listen for pause events from track players
-    const handlePauseEvent = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail.source !== 'listen-mode') {
-        audio.pause();
-        setIsPlaying(false);
-      }
-    };
-
     audio.addEventListener("timeupdate", syncWaveform);
-    window.addEventListener('pause-all-players', handlePauseEvent);
 
     return () => {
       audio.removeEventListener("timeupdate", syncWaveform);
-      window.removeEventListener('pause-all-players', handlePauseEvent);
     };
   }, [waveformReady, currentIndex]);
 

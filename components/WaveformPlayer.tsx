@@ -18,6 +18,26 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
   const [duration, setDuration] = useState("0:00");
   const [error, setError] = useState<string | null>(null);
 
+  // Listen for pause events from other players (runs immediately on mount)
+  useEffect(() => {
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('[WaveformPlayer] Received pause event from:', customEvent.detail.source, 'My url:', url);
+      if (customEvent.detail.source !== url) {
+        console.log('[WaveformPlayer] Pausing myself');
+        if (wavesurferRef.current) {
+          wavesurferRef.current.pause();
+        }
+      }
+    };
+
+    window.addEventListener('pause-all-players', handlePauseEvent);
+
+    return () => {
+      window.removeEventListener('pause-all-players', handlePauseEvent);
+    };
+  }, [url]);
+
   useEffect(() => {
     if (!waveformRef.current) return;
 
@@ -25,7 +45,6 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
     if (wavesurferRef.current) return;
 
     let wavesurfer: any = null;
-    let handlePauseEvent: ((e: Event) => void) | null = null;
 
     // Detect if mobile device
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -74,28 +93,23 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
 
       wavesurfer.on("play", () => {
         setIsPlaying(true);
+        console.log('[WaveformPlayer] Playing:', url);
         // Pause all other audio/video elements when this starts playing
         const allMedia = document.querySelectorAll<HTMLMediaElement>('audio, video');
+        console.log('[WaveformPlayer] Found audio elements:', allMedia.length);
         allMedia.forEach((media) => {
           if (!media.paused) {
+            console.log('[WaveformPlayer] Pausing audio element');
             media.pause();
           }
         });
 
         // Dispatch custom event to pause all other players
+        console.log('[WaveformPlayer] Dispatching pause-all-players event');
         window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: url } }));
       });
       wavesurfer.on("pause", () => setIsPlaying(false));
 
-      // Listen for pause events from other players
-      handlePauseEvent = (e: Event) => {
-        const customEvent = e as CustomEvent;
-        if (customEvent.detail.source !== url) {
-          wavesurfer.pause();
-        }
-      };
-
-      window.addEventListener('pause-all-players', handlePauseEvent);
       wavesurfer.on("finish", () => {
         setIsPlaying(false);
         setCurrentTime("0:00");
@@ -120,9 +134,6 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
     });
 
     return () => {
-      if (handlePauseEvent) {
-        window.removeEventListener('pause-all-players', handlePauseEvent);
-      }
       if (wavesurferRef.current) {
         try {
           wavesurferRef.current.stop();
