@@ -1098,6 +1098,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                     }
                                   }
                                   if (videoId) {
+                                    setPlayingSong(null); // Pause any playing waveform
                                     setYoutubePlayer({ videoId, title: ref.title });
                                   }
                                 }}
