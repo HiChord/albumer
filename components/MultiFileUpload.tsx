@@ -202,10 +202,9 @@ export default function MultiFileUpload({
                       <CheckCircle className="w-4 h-4 text-green-500" />
                     )}
                     {fileData.status === "error" && (
-                      <AlertCircle
-                        className="w-4 h-4 text-red-500"
-                        title={fileData.error}
-                      />
+                      <div title={fileData.error}>
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      </div>
                     )}
                     {fileData.status === "uploading" && (
                       <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--accent)" }} />
