@@ -41,6 +41,7 @@ import WaveformPlayer from "@/components/WaveformPlayer";
 import DragDropOverlay from "@/components/DragDropOverlay";
 import FileAssignmentModal from "@/components/FileAssignmentModal";
 import FileManager from "@/components/FileManager";
+import YouTubePlayer from "@/components/YouTubePlayer";
 import { useUser } from "@/lib/UserContext";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
@@ -68,6 +69,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [droppedFiles, setDroppedFiles] = useState<Array<{ file: File; type: "audio" | "logic" }> | null>(null);
   const [dragOverSongId, setDragOverSongId] = useState<string | null>(null);
   const [fileManagerOpen, setFileManagerOpen] = useState<{ songId: string; type: "audio" | "logic"; songTitle: string } | null>(null);
+  const [youtubePlayer, setYoutubePlayer] = useState<{ videoId: string; title: string } | null>(null);
 
   useEffect(() => {
     loadAlbum();
@@ -571,6 +573,15 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         />
       )}
 
+      {/* YouTube Player */}
+      {youtubePlayer && (
+        <YouTubePlayer
+          videoId={youtubePlayer.videoId}
+          title={youtubePlayer.title}
+          onClose={() => setYoutubePlayer(null)}
+        />
+      )}
+
       {/* Minimal Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="max-w-[2000px] mx-auto px-8 py-6 pr-72">
@@ -889,6 +900,33 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                             </div>
                           </div>
                           <div className="flex items-center gap-2 opacity-0 group-hover/ref:opacity-60">
+                            {ref.type === "youtube" && (
+                              <button
+                                onClick={() => {
+                                  // Extract video ID from YouTube URL
+                                  const patterns = [
+                                    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/,
+                                    /youtube\.com\/embed\/([^&\s]+)/,
+                                    /youtube\.com\/v\/([^&\s]+)/
+                                  ];
+                                  let videoId = "";
+                                  for (const pattern of patterns) {
+                                    const match = ref.url.match(pattern);
+                                    if (match) {
+                                      videoId = match[1];
+                                      break;
+                                    }
+                                  }
+                                  if (videoId) {
+                                    setYoutubePlayer({ videoId, title: ref.title });
+                                  }
+                                }}
+                                className="transition-opacity hover:opacity-100"
+                                title="Play"
+                              >
+                                <Play className="w-3 h-3" />
+                              </button>
+                            )}
                             <a
                               href={ref.url}
                               target="_blank"
