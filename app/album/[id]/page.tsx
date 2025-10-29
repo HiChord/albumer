@@ -949,12 +949,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       {getLogicFile(song) ? `${song.files.filter((f: any) => f.type === "logic").length} Files` : 'Upload'}
                     </button>
                     {uploadProgress[song.id] && Object.keys(uploadProgress[song.id]).length > 0 && (
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-2 space-y-1 px-0.5">
                         {Object.entries(uploadProgress[song.id]).map(([fileKey, { progress, status, fileName }]) => (
                           <div key={fileKey} className="text-[9px]">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <span className="opacity-60 truncate max-w-[80px]" title={fileName}>{fileName}</span>
-                              <span className="opacity-40">{Math.round(progress)}%</span>
+                            <div className="flex items-center justify-between mb-0.5 px-0.5">
+                              <span className="opacity-60 truncate max-w-[70px]" title={fileName}>{fileName}</span>
+                              <span className="opacity-40 text-[8px]">{Math.round(progress)}%</span>
                             </div>
                             <div className="w-full h-0.5 bg-black/20 rounded-full overflow-hidden">
                               <div
@@ -965,7 +965,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                                 }}
                               />
                             </div>
-                            <div className="opacity-30 mt-0.5">{status}</div>
+                            <div className="opacity-30 mt-0.5 px-0.5 text-[8px]">{status}</div>
                           </div>
                         ))}
                       </div>
