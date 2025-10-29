@@ -50,7 +50,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [playingSong, setPlayingSong] = useState<string | null>(null);
   const [showRefSearch, setShowRefSearch] = useState<string | null>(null);
   const [refSearchQuery, setRefSearchQuery] = useState("");
-  const [refSearchType, setRefSearchType] = useState<"spotify" | "youtube">("spotify");
+  const [refSearchType, setRefSearchType] = useState<"spotify" | "youtube">("youtube");
   const [refSearchResults, setRefSearchResults] = useState<any[]>([]);
   const [searchingRefs, setSearchingRefs] = useState(false);
   const [commentText, setCommentText] = useState<{ [key: string]: string }>({});
@@ -911,21 +911,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                       {showRefSearch === song.id ? (
                         <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
                           <div className="mb-2 text-xs opacity-30 uppercase tracking-wider">
-                            Paste YouTube URL
+                            Search YouTube
                           </div>
                           <div className="flex gap-2 mb-3">
                             <input
                               type="text"
                               value={refSearchQuery}
                               onChange={(e) => setRefSearchQuery(e.target.value)}
-                              placeholder="https://www.youtube.com/watch?v=..."
+                              placeholder="Search for artist or song..."
                               className="flex-1 px-3 py-1.5 text-xs font-light border-b bg-transparent focus:outline-none"
                               style={{ borderColor: 'var(--border)' }}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                  if (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be")) {
-                                    handleAddYouTubeUrl(song.id, refSearchQuery);
-                                  }
+                                  handleSearchReferences();
                                 }
                                 if (e.key === "Escape") {
                                   setShowRefSearch(null);
@@ -935,16 +933,42 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                               }}
                             />
                             <button
-                              onClick={() => {
-                                if (refSearchQuery.includes("youtube.com") || refSearchQuery.includes("youtu.be")) {
-                                  handleAddYouTubeUrl(song.id, refSearchQuery);
-                                }
-                              }}
-                              className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100"
+                              onClick={handleSearchReferences}
+                              disabled={searchingRefs || !refSearchQuery.trim()}
+                              className="text-xs uppercase tracking-wider font-light transition-opacity opacity-60 hover:opacity-100 disabled:opacity-30"
                             >
-                              Add
+                              {searchingRefs ? <Loader2 className="w-3 h-3 animate-spin" /> : "Search"}
                             </button>
                           </div>
+
+                          {refSearchResults.length > 0 ? (
+                            <div className="space-y-2 mb-3 max-h-32 overflow-y-auto">
+                              {refSearchResults.map((result, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-3 py-1 group/result"
+                                >
+                                  {result.thumbnail && (
+                                    <img src={result.thumbnail} alt={result.title} className="w-6 h-6 object-cover opacity-60" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-light truncate">{result.title}</div>
+                                    <div className="text-xs opacity-40 truncate">{result.artist}</div>
+                                  </div>
+                                  <button
+                                    onClick={() => handleAddReference(song.id, result)}
+                                    className="text-xs uppercase tracking-wider font-light opacity-0 group-hover/result:opacity-60 hover:opacity-100 transition-opacity"
+                                  >
+                                    Add
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          ) : searchingRefs ? null : refSearchQuery && refSearchResults.length === 0 ? (
+                            <div className="mb-3 py-2 text-xs opacity-40">
+                              No results found. Try a different search.
+                            </div>
+                          ) : null}
 
                           <button
                             onClick={() => {
