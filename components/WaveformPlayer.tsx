@@ -87,7 +87,7 @@ export default function WaveformPlayer({ url, filename, autoplay = false }: Wave
       // Listen for pause events from other players
       handlePauseEvent = (e: Event) => {
         const customEvent = e as CustomEvent;
-        if (customEvent.detail.source !== url && customEvent.detail.source !== 'listen-mode') {
+        if (customEvent.detail.source !== url) {
           wavesurfer.pause();
         }
       };
