@@ -33,79 +33,119 @@
 }
 
 /* Home Page Theme - Warm Peach & Cream */
-/* Force light theme for home regardless of system preference */
-.theme-home,
-html .theme-home,
-body .theme-home {
-  --background: #faf8f5 !important;
-  --foreground: #3d3935 !important;
-  --border: #ebe6df !important;
-  --accent: #d4a574 !important;
-  --accent-hover: #e0b887 !important;
-  --secondary: #c8a882 !important;
-  --tertiary: #e6c9a8 !important;
-  --surface: #ffffff !important;
-  --surface-alt: #f5f0ea !important;
-  --highlight: #f4e4d4 !important;
-  color-scheme: light;
-  -webkit-color-scheme: light;
+.theme-home {
+  --background: #faf8f5;
+  --foreground: #3d3935;
+  --border: #ebe6df;
+  --accent: #d4a574;
+  --accent-hover: #e0b887;
+  --secondary: #c8a882;
+  --tertiary: #e6c9a8;
+  --surface: #ffffff;
+  --surface-alt: #f5f0ea;
+  --highlight: #f4e4d4;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-home {
+    --background: #1f1d1a;
+    --foreground: #ede8e0;
+    --border: #3a3530;
+    --accent: #c9996d;
+    --accent-hover: #daa97d;
+    --secondary: #b0916f;
+    --tertiary: #8a7456;
+    --surface: #2a2723;
+    --surface-alt: #332f2a;
+    --highlight: #3d3832;
+  }
 }
 
 /* Dev Theme - Soft Purple & Lavender */
-/* Force light theme for Dev regardless of system preference */
-.theme-dev,
-html .theme-dev,
-body .theme-dev {
-  --background: #fbfafd !important;
-  --foreground: #4a4556 !important;
-  --border: #f0edf7 !important;
-  --accent: #b8a8d8 !important;
-  --accent-hover: #c9bde4 !important;
-  --secondary: #d4c8e8 !important;
-  --tertiary: #e3dbf0 !important;
-  --surface: #ffffff !important;
-  --surface-alt: #f7f4fb !important;
-  --highlight: #ede8f5 !important;
-  color-scheme: light;
-  -webkit-color-scheme: light;
+.theme-dev {
+  --background: #fbfafd;
+  --foreground: #4a4556;
+  --border: #f0edf7;
+  --accent: #b8a8d8;
+  --accent-hover: #c9bde4;
+  --secondary: #d4c8e8;
+  --tertiary: #e3dbf0;
+  --surface: #ffffff;
+  --surface-alt: #f7f4fb;
+  --highlight: #ede8f5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-dev {
+    --background: #1d1a24;
+    --foreground: #ede9f5;
+    --border: #342f42;
+    --accent: #9884c8;
+    --accent-hover: #aa96d8;
+    --secondary: #8674b8;
+    --tertiary: #6d5d9a;
+    --surface: #262132;
+    --surface-alt: #2f2a3d;
+    --highlight: #3a3448;
+  }
 }
 
 /* Khal Theme - Soft Sage & Mint Green */
-/* Force light theme for Khal regardless of system preference */
-.theme-khal,
-html .theme-khal,
-body .theme-khal {
-  --background: #f7fbf8 !important;
-  --foreground: #3a433d !important;
-  --border: #e4efe8 !important;
-  --accent: #88b89a !important;
-  --accent-hover: #9cc7ac !important;
-  --secondary: #a4ccb1 !important;
-  --tertiary: #c1ddc9 !important;
-  --surface: #ffffff !important;
-  --surface-alt: #eff7f2 !important;
-  --highlight: #dff0e5 !important;
-  color-scheme: light;
-  -webkit-color-scheme: light;
+.theme-khal {
+  --background: #f7fbf8;
+  --foreground: #3a433d;
+  --border: #e4efe8;
+  --accent: #88b89a;
+  --accent-hover: #9cc7ac;
+  --secondary: #a4ccb1;
+  --tertiary: #c1ddc9;
+  --surface: #ffffff;
+  --surface-alt: #eff7f2;
+  --highlight: #dff0e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-khal {
+    --background: #1a231d;
+    --foreground: #e8f2ed;
+    --border: #2e3d33;
+    --accent: #7ba88c;
+    --accent-hover: #8db89d;
+    --secondary: #6b9880;
+    --tertiary: #5a8169;
+    --surface: #212b25;
+    --surface-alt: #293530;
+    --highlight: #333f38;
+  }
 }
 
 /* Andy Theme - Soft Blue & Periwinkle */
-/* Force light theme for Andy regardless of system preference */
-.theme-andy,
-html .theme-andy,
-body .theme-andy {
-  --background: #fafbfd !important;
-  --foreground: #444a56 !important;
-  --border: #edf2f7 !important;
-  --accent: #a0b8d8 !important;
-  --accent-hover: #b4c8e4 !important;
-  --secondary: #c0d3ea !important;
-  --tertiary: #d8e4f2 !important;
-  --surface: #ffffff !important;
-  --surface-alt: #f5f8fb !important;
-  --highlight: #e8eff7 !important;
-  color-scheme: light;
-  -webkit-color-scheme: light;
+.theme-andy {
+  --background: #fafbfd;
+  --foreground: #444a56;
+  --border: #edf2f7;
+  --accent: #a0b8d8;
+  --accent-hover: #b4c8e4;
+  --secondary: #c0d3ea;
+  --tertiary: #d8e4f2;
+  --surface: #ffffff;
+  --surface-alt: #f5f8fb;
+  --highlight: #e8eff7;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-andy {
+    --background: #1a1f26;
+    --foreground: #e8ecf2;
+    --border: #2e3642;
+    --accent: #7a98c0;
+    --accent-hover: #8ba8d0;
+    --secondary: #6a87ad;
+    --tertiary: #5a7492;
+    --surface: #212630;
+    --surface-alt: #293038;
+    --highlight: #333d48;
+  }
 }
 
 body {
@@ -116,28 +156,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Safari-specific fixes */
-@supports (-webkit-touch-callout: none) {
-  /* Force color scheme on Safari iOS */
-  :root {
-    color-scheme: light;
-    -webkit-color-scheme: light;
-  }
-
-  /* Ensure theme colors take precedence */
-  .theme-home, .theme-dev, .theme-khal, .theme-andy {
-    color-scheme: light !important;
-    -webkit-color-scheme: light !important;
-  }
-}
-
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
 }
 
-/* Custom scrollbar - Use theme colors */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -148,13 +173,22 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: #d4d4d4;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
-  opacity: 0.8;
+  background: #a3a3a3;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #404040;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #525252;
+  }
 }
 
 /* Audio player slider */
