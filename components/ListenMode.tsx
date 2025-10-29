@@ -55,7 +55,7 @@ export default function ListenMode({ isOpen, onClose, audioFiles, onReorder }: L
 
     // Pause all other audio/video elements when this starts playing
     const handlePlay = () => {
-      const allMedia = document.querySelectorAll('audio, video');
+      const allMedia = document.querySelectorAll<HTMLMediaElement>('audio, video');
       allMedia.forEach((media) => {
         if (media !== audio && !media.paused) {
           media.pause();
