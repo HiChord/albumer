@@ -20,6 +20,7 @@ import {
   getAlbum,
   createSong,
   updateSong,
+  deleteSong,
   addReference,
   deleteReference,
   addComment,
@@ -29,12 +30,15 @@ import {
   searchYouTube,
   addFile,
   updateAlbum,
+  deleteAlbum,
   reorderSongs
 } from "@/lib/actions";
 import VersionHistory from "@/components/VersionHistory";
 import ListenMode from "@/components/ListenMode";
 import FileUpload from "@/components/FileUpload";
 import WaveformPlayer from "@/components/WaveformPlayer";
+import DragDropOverlay from "@/components/DragDropOverlay";
+import FileAssignmentModal from "@/components/FileAssignmentModal";
 import { useUser } from "@/lib/UserContext";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
@@ -58,6 +62,9 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showListenMode, setShowListenMode] = useState(false);
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<Array<{ file: File; type: "audio" | "logic" }> | null>(null);
+  const [dragOverSongId, setDragOverSongId] = useState<string | null>(null);
 
   useEffect(() => {
     loadAlbum();
@@ -92,6 +99,18 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const handleAddSong = async () => {
     await createSong(resolvedParams.id);
     await loadAlbum();
+  };
+
+  const handleDeleteSong = async (songId: string, songTitle: string) => {
+    if (!confirm(`Delete "${songTitle}"? This cannot be undone.`)) return;
+    await deleteSong(songId);
+    await loadAlbum();
+  };
+
+  const handleDeleteAlbum = async () => {
+    if (!confirm(`Delete album "${album.name}"? This will delete all songs and cannot be undone.`)) return;
+    await deleteAlbum(resolvedParams.id);
+    window.location.href = "/";
   };
 
   // Debounce timers
@@ -259,6 +278,61 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     setDragOverIndex(null);
   };
 
+  const handleTrackDragOver = (e: React.DragEvent, songId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes("Files")) {
+      setDragOverSongId(songId);
+    }
+  };
+
+  const handleTrackDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverSongId(null);
+  };
+
+  const handleTrackDrop = async (e: React.DragEvent, songId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverSongId(null);
+    setIsDraggingFiles(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    // Upload files directly to this track
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const isAudio = ["mp3", "wav", "aac", "flac", "m4a", "ogg", "aiff"].includes(ext || "");
+      const isLogic = ["logicx", "logic"].includes(ext || "");
+      const type = isLogic ? "logic" : "audio";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.file) {
+        await addFile(songId, {
+          name: data.file.name,
+          type,
+          url: data.file.url,
+          mimeType: data.file.mimeType,
+          size: data.file.size,
+          externalId: data.file.externalId ?? undefined,
+        });
+      }
+    }
+
+    await loadAlbum();
+  };
+
   const getAudioFile = (song: any) => {
     return song.files?.find((f: any) => f.type === "audio");
   };
@@ -281,6 +355,82 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         };
       })
       .filter((file: any) => file !== null);
+  };
+
+  const handlePageDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer.types.includes("Files")) {
+      setIsDraggingFiles(true);
+    }
+  };
+
+  const handlePageDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set to false if leaving the page container
+    if (e.currentTarget === e.target) {
+      setIsDraggingFiles(false);
+    }
+  };
+
+  const handlePageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingFiles(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+
+    const categorizedFiles = files.map((file) => {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const isAudio = ["mp3", "wav", "aac", "flac", "m4a", "ogg", "aiff"].includes(ext || "");
+      const isLogic = ["logicx", "logic"].includes(ext || "");
+
+      return {
+        file,
+        type: (isLogic ? "logic" : "audio") as "audio" | "logic",
+      };
+    });
+
+    setDroppedFiles(categorizedFiles);
+  };
+
+  const handleFileAssignment = async (songId: string | "new", files: Array<{ file: File; type: "audio" | "logic" }>) => {
+    let targetSongId = songId;
+
+    // Create new track if needed
+    if (songId === "new") {
+      const newSong = await createSong(resolvedParams.id);
+      targetSongId = newSong.id;
+    }
+
+    // Upload all files
+    for (const { file, type } of files) {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (data.file) {
+        await addFile(targetSongId, {
+          name: data.file.name,
+          type,
+          url: data.file.url,
+          mimeType: data.file.mimeType,
+          size: data.file.size,
+          externalId: data.file.externalId ?? undefined,
+        });
+      }
+    }
+
+    setDroppedFiles(null);
+    await loadAlbum();
   };
 
   const handleReorderFromListenMode = async (reorderedFiles: any[]) => {
@@ -309,7 +459,26 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   }
 
   return (
-    <div className={`${themeClass} min-h-screen`} style={{ background: 'var(--background)', color: 'var(--foreground)' }}>
+    <div
+      className={`${themeClass} min-h-screen`}
+      style={{ background: 'var(--background)', color: 'var(--foreground)' }}
+      onDragOver={handlePageDragOver}
+      onDragLeave={handlePageDragLeave}
+      onDrop={handlePageDrop}
+    >
+      {/* Drag Drop Overlay */}
+      <DragDropOverlay isDragging={isDraggingFiles} onDrop={handlePageDrop} />
+
+      {/* File Assignment Modal */}
+      {droppedFiles && (
+        <FileAssignmentModal
+          files={droppedFiles}
+          songs={album.songs.map((s: any) => ({ id: s.id, title: s.title }))}
+          onAssign={handleFileAssignment}
+          onClose={() => setDroppedFiles(null)}
+        />
+      )}
+
       {/* Minimal Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="max-w-[2000px] mx-auto px-8 py-6">
@@ -359,7 +528,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               </p>
             </div>
 
-            {/* Right: Listen Mode + Add */}
+            {/* Right: Listen Mode + Add + Delete */}
             <div className="flex items-center justify-end gap-4">
               <button
                 onClick={() => setShowListenMode(true)}
@@ -380,6 +549,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               >
                 <Plus className="w-3 h-3" />
                 <span>Add Track</span>
+              </button>
+              <button
+                onClick={handleDeleteAlbum}
+                className="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity opacity-40 hover:opacity-100"
+                style={{ color: 'var(--foreground)' }}
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Delete Album</span>
               </button>
             </div>
           </div>
@@ -413,21 +590,34 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 key={song.id}
                 draggable
                 onDragStart={() => handleDragStart(index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
+                onDragOver={(e) => {
+                  handleDragOver(e, index);
+                  handleTrackDragOver(e, song.id);
+                }}
+                onDragLeave={(e) => {
+                  handleDragLeave();
+                  handleTrackDragLeave(e);
+                }}
+                onDrop={(e) => {
+                  // Check if it's a file drop or song reorder
+                  if (e.dataTransfer.types.includes("Files")) {
+                    handleTrackDrop(e, song.id);
+                  } else {
+                    handleDrop(e, index);
+                  }
+                }}
                 onDragEnd={handleDragEnd}
-                className="overflow-hidden transition-all duration-200"
+                className="group overflow-hidden transition-all duration-200"
                 style={{
                   background: isDragging
                     ? 'var(--highlight)'
-                    : isDropTarget
+                    : isDropTarget || dragOverSongId === song.id
                     ? 'var(--accent)'
                     : 'var(--surface-alt)',
                   opacity: isDragging ? '0.5' : '1',
                   transform: isDragging ? 'scale(0.98)' : 'scale(1)',
                   cursor: isDragging ? 'grabbing' : 'grab',
-                  boxShadow: isDropTarget ? '0 0 0 2px var(--accent)' : 'none'
+                  boxShadow: (isDropTarget || dragOverSongId === song.id) ? '0 0 0 2px var(--accent)' : 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (draggedIndex === null) {
@@ -462,6 +652,14 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     ) : (
                       <div className="w-2 h-2 rounded-full opacity-20" style={{ background: 'var(--accent)' }}></div>
                     )}
+                    {/* Delete Song Button */}
+                    <button
+                      onClick={() => handleDeleteSong(song.id, song.title)}
+                      className="w-6 h-6 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity group-hover:opacity-40"
+                      title="Delete track"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
 
                   {/* Title */}

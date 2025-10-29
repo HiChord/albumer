@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Music, Plus, Clock } from "lucide-react";
+import { Music, Plus, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { createAlbum, getAlbums } from "@/lib/actions";
+import { createAlbum, getAlbums, deleteAlbum } from "@/lib/actions";
 
 interface Album {
   id: string;
@@ -51,6 +51,14 @@ export default function Home() {
     setShowNewAlbum(false);
   };
 
+  const handleDeleteAlbum = async (e: React.MouseEvent, albumId: string, albumName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm(`Delete album "${albumName}"? This will delete all songs and cannot be undone.`)) return;
+    await deleteAlbum(albumId);
+    await loadAlbums();
+  };
+
   if (loading) {
     return (
       <div className="theme-home min-h-screen flex items-center justify-center" style={{ background: 'var(--background)' }}>
@@ -68,7 +76,7 @@ export default function Home() {
             <div className="w-3 h-3 rounded-full opacity-60" style={{ background: 'var(--accent)' }}></div>
           </div>
           <h1 className="text-7xl md:text-8xl font-light tracking-tight text-center mb-6" style={{ fontWeight: 200 }}>
-            Albumer
+            Wild Rivers :)
           </h1>
         </div>
       </div>
@@ -165,7 +173,7 @@ export default function Home() {
                 <Link
                   key={album.id}
                   href={`/album/${album.id}`}
-                  className="group p-12 transition-all duration-300"
+                  className="group p-12 transition-all duration-300 relative"
                   style={{
                     background: 'var(--background)',
                     color: 'var(--foreground)'
@@ -178,8 +186,15 @@ export default function Home() {
                   }}
                 >
                   <div className="flex flex-col h-full">
-                    <div className="mb-8">
+                    <div className="mb-8 flex items-center justify-between">
                       <div className="w-2 h-2 rounded-full opacity-40 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--accent)' }}></div>
+                      <button
+                        onClick={(e) => handleDeleteAlbum(e, album.id, album.name)}
+                        className="opacity-0 group-hover:opacity-40 hover:opacity-100 transition-opacity"
+                        title="Delete album"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                     <h3 className="text-2xl font-light tracking-tight mb-3">
                       {album.name}

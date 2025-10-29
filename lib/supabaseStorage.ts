@@ -169,6 +169,18 @@ export async function touchAlbum(id: string): Promise<void> {
     .eq("id", id);
 }
 
+export async function deleteAlbum(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase
+    .from("albums")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(`Error deleting album: ${error.message}`);
+  }
+}
+
 // Song Operations
 export async function getAllSongs(): Promise<Song[]> {
   const supabase = getSupabaseClient();

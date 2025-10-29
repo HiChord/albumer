@@ -16,6 +16,11 @@ export async function updateAlbum(id: string, name: string) {
   return album;
 }
 
+export async function deleteAlbum(id: string) {
+  await storage.deleteAlbum(id);
+  revalidatePath("/");
+}
+
 export async function getAlbums() {
   const albums = await storage.getAllAlbums();
 
