@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureUploadsDir, getUploadPath } from "@/lib/localStorage";
-import fs from "fs/promises";
-import path from "path";
+import { createClient } from "@supabase/supabase-js";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,41 +10,56 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // Ensure uploads directory exists
-    await ensureUploadsDir();
+    // Initialize Supabase client
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
 
     // Generate unique filename
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 8);
-    const ext = path.extname(file.name);
-    const basename = path.basename(file.name, ext);
-    const uniqueFilename = `${basename}_${timestamp}_${randomStr}${ext}`;
+    const ext = file.name.split('.').pop();
+    const basename = file.name.replace(`.${ext}`, '');
+    const uniqueFilename = `${basename}_${timestamp}_${randomStr}.${ext}`;
 
-    // Save file to uploads directory
+    // Upload file to Supabase Storage
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const filePath = getUploadPath(uniqueFilename);
+    const { data, error } = await supabase.storage
+      .from("audio-files")
+      .upload(uniqueFilename, bytes, {
+        contentType: file.type,
+        upsert: false,
+      });
 
-    await fs.writeFile(filePath, buffer);
+    if (error) {
+      console.error("Supabase upload error:", error);
+      return NextResponse.json(
+        { error: `Upload failed: ${error.message}` },
+        { status: 500 }
+      );
+    }
 
-    // Return file URL (relative path for serving via API)
-    const fileUrl = `/api/files/${uniqueFilename}`;
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("audio-files")
+      .getPublicUrl(uniqueFilename);
 
     return NextResponse.json({
       success: true,
       file: {
         name: file.name,
-        url: fileUrl,
+        url: urlData.publicUrl,
         size: file.size,
         mimeType: file.type,
         externalId: uniqueFilename,
-        previewUrl: fileUrl,
+        previewUrl: urlData.publicUrl,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Upload error:", error);
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: `Upload failed: ${error.message}` },
       { status: 500 }
     );
   }
