@@ -19,6 +19,7 @@ export interface Song {
   notesUser?: string;
   notesUpdatedAt?: string;
   progress: string;
+  origin: string;
   order: number;
   albumId: string;
   createdAt: string;
@@ -174,6 +175,7 @@ export async function createSong(albumId: string, title: string = "Untitled"): P
     lyrics: "",
     notes: "",
     progress: "Not Started",
+    origin: "Group Nashville",
     order: maxOrder + 1,
     albumId,
     createdAt: new Date().toISOString(),
