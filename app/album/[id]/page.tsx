@@ -403,6 +403,17 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return colors[progress] || "#FBBF24"; // Default to "In Progress" color
   };
 
+  const getOriginColor = (origin: string) => {
+    const colors: { [key: string]: string } = {
+      "Dev +": "#8B5CF6",
+      "Andy +": "#06B6D4",
+      "Khal +": "#EC4899",
+      "Bunnetta Week": "#F59E0B",
+      "Group Nashville": "#10B981",
+    };
+    return colors[origin] || "#10B981"; // Default to "Group Nashville" color
+  };
+
   const getAudioFiles = () => {
     return album.songs
       .map((song: any) => {
@@ -968,7 +979,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     </div>
 
                     {/* Mobile + Desktop: Controls Grid */}
-                    <div className="grid grid-cols-2 md:flex md:items-start gap-3 md:gap-4">
+                    <div className="grid grid-cols-2 md:flex md:items-start gap-3 md:gap-4 md:flex-wrap lg:flex-nowrap">
                       {/* Status */}
                       <div className="w-full md:w-32">
                         <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
@@ -990,6 +1001,29 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           <option>Mixing</option>
                           <option>Mastering</option>
                           <option>Complete</option>
+                        </select>
+                      </div>
+
+                      {/* Origin */}
+                      <div className="w-full md:w-32">
+                        <div className="text-[10px] opacity-30 mb-1 uppercase tracking-wider text-center">
+                          Origin
+                        </div>
+                        <select
+                          value={song.origin || "Group Nashville"}
+                          onChange={(e) => handleUpdateSong(song.id, "origin", e.target.value)}
+                          className="w-full px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-medium rounded focus:outline-none transition-all hover:opacity-90"
+                          style={{
+                            background: getOriginColor(song.origin || "Group Nashville"),
+                            color: 'white',
+                            border: 'none'
+                          }}
+                        >
+                          <option>Dev +</option>
+                          <option>Andy +</option>
+                          <option>Khal +</option>
+                          <option>Bunnetta Week</option>
+                          <option>Group Nashville</option>
                         </select>
                       </div>
 
@@ -1366,6 +1400,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
             })}
           </div>
         )}
+
       </div>
 
       {/* Listen Mode */}

@@ -18,6 +18,7 @@ export interface Song {
   notesUser?: string;
   notesUpdatedAt?: string;
   progress: string;
+  origin: string;
   order: number;
   albumId: string;
   createdAt: string;
