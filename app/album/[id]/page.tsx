@@ -767,53 +767,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="max-w-[2000px] mx-auto px-4 md:px-8 py-4 md:py-6 md:pr-72">
           <div className="flex flex-col md:grid md:grid-cols-3 items-center gap-4 md:gap-8">
-            {/* Left: Back */}
-            <div className="flex items-center gap-4 w-full md:w-auto">
+            {/* Left: Back + Search + Filter */}
+            <div className="flex items-center gap-2 w-full md:w-auto">
               <Link
                 href="/"
-                className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light"
+                className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light whitespace-nowrap"
               >
                 <ArrowLeft className="w-3 h-3" />
-                <span>Back</span>
+                <span className="hidden sm:inline">Back</span>
               </Link>
-            </div>
 
-            {/* Center: Album Name */}
-            <div className="flex flex-col items-center justify-center w-full">
-              {editingAlbumName ? (
-                <input
-                  type="text"
-                  value={albumName}
-                  onChange={(e) => setAlbumName(e.target.value)}
-                  onBlur={handleUpdateAlbumName}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleUpdateAlbumName();
-                    if (e.key === 'Escape') {
-                      setEditingAlbumName(false);
-                      setAlbumName(album.name);
-                    }
-                  }}
-                  className="text-2xl md:text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2 w-full"
-                  style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
-                  autoFocus
-                />
-              ) : (
-                <h1
-                  className="text-2xl md:text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
-                  onClick={() => setEditingAlbumName(true)}
-                  title="Click to edit"
-                  style={{ fontWeight: 200 }}
-                >
-                  {album.name}
-                </h1>
-              )}
-              <p className="text-xs opacity-40 mt-2 uppercase tracking-wider">
-                {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
-              </p>
-            </div>
-
-            {/* Right: Search, Filter, and Actions */}
-            <div className="flex items-center justify-center md:justify-end gap-2 w-full md:w-auto flex-wrap">
               {/* Search Input - Compact */}
               <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 opacity-30" />
@@ -862,11 +825,44 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   <X className="w-3 h-3" />
                 </button>
               )}
+            </div>
 
-              {/* Divider */}
-              <div className="w-px h-4 opacity-20" style={{ background: 'var(--foreground)' }}></div>
+            {/* Center: Album Name */}
+            <div className="flex flex-col items-center justify-center w-full">
+              {editingAlbumName ? (
+                <input
+                  type="text"
+                  value={albumName}
+                  onChange={(e) => setAlbumName(e.target.value)}
+                  onBlur={handleUpdateAlbumName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleUpdateAlbumName();
+                    if (e.key === 'Escape') {
+                      setEditingAlbumName(false);
+                      setAlbumName(album.name);
+                    }
+                  }}
+                  className="text-2xl md:text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2 w-full"
+                  style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className="text-2xl md:text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
+                  onClick={() => setEditingAlbumName(true)}
+                  title="Click to edit"
+                  style={{ fontWeight: 200 }}
+                >
+                  {album.name}
+                </h1>
+              )}
+              <p className="text-xs opacity-40 mt-2 uppercase tracking-wider">
+                {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
+              </p>
+            </div>
 
-              {/* Action Buttons */}
+            {/* Right: Listen Mode + Add + Delete */}
+            <div className="flex items-center justify-center md:justify-end gap-2 md:gap-4 w-full md:w-auto">
               <button
                 onClick={() => setShowListenMode(true)}
                 className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
