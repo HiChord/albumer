@@ -766,88 +766,63 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       {/* Minimal Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl border-b" style={{ background: 'var(--background)', borderColor: 'var(--border)' }}>
         <div className="max-w-[2000px] mx-auto px-4 md:px-8 py-4 md:py-6 md:pr-72">
-          <div className="flex flex-col gap-4">
-            {/* Main Nav Row */}
-            <div className="flex items-center justify-between gap-4">
-              {/* Left: Back */}
+          <div className="flex flex-col md:grid md:grid-cols-3 items-center gap-4 md:gap-8">
+            {/* Left: Back */}
+            <div className="flex items-center gap-4 w-full md:w-auto">
               <Link
                 href="/"
-                className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light whitespace-nowrap"
+                className="flex items-center gap-2 transition-opacity hover:opacity-60 text-xs uppercase tracking-[0.2em] font-light"
               >
                 <ArrowLeft className="w-3 h-3" />
-                <span className="hidden sm:inline">Back</span>
+                <span>Back</span>
               </Link>
-
-              {/* Center: Album Name */}
-              <div className="flex flex-col items-center justify-center flex-1">
-                {editingAlbumName ? (
-                  <input
-                    type="text"
-                    value={albumName}
-                    onChange={(e) => setAlbumName(e.target.value)}
-                    onBlur={handleUpdateAlbumName}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleUpdateAlbumName();
-                      if (e.key === 'Escape') {
-                        setEditingAlbumName(false);
-                        setAlbumName(album.name);
-                      }
-                    }}
-                    className="text-2xl md:text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2 w-full max-w-md"
-                    style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
-                    autoFocus
-                  />
-                ) : (
-                  <h1
-                    className="text-2xl md:text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
-                    onClick={() => setEditingAlbumName(true)}
-                    title="Click to edit"
-                    style={{ fontWeight: 200 }}
-                  >
-                    {album.name}
-                  </h1>
-                )}
-                <p className="text-xs opacity-40 mt-1 uppercase tracking-wider">
-                  {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
-                </p>
-              </div>
-
-              {/* Right: Actions */}
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <button
-                  onClick={() => setShowListenMode(true)}
-                  className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity"
-                  style={{ color: 'var(--accent)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                >
-                  <Headphones className="w-3 h-3" />
-                  <span className="hidden lg:inline">Listen</span>
-                </button>
-                <button
-                  onClick={handleAddSong}
-                  className="flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs uppercase tracking-wider font-light transition-opacity"
-                  style={{ color: 'var(--accent)' }}
-                  onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
-                  onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                >
-                  <Plus className="w-3 h-3" />
-                  <span className="hidden lg:inline">Add</span>
-                </button>
-              </div>
             </div>
 
-            {/* Search and Filter Row - Compact */}
-            <div className="flex items-center gap-2">
+            {/* Center: Album Name */}
+            <div className="flex flex-col items-center justify-center w-full">
+              {editingAlbumName ? (
+                <input
+                  type="text"
+                  value={albumName}
+                  onChange={(e) => setAlbumName(e.target.value)}
+                  onBlur={handleUpdateAlbumName}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleUpdateAlbumName();
+                    if (e.key === 'Escape') {
+                      setEditingAlbumName(false);
+                      setAlbumName(album.name);
+                    }
+                  }}
+                  className="text-2xl md:text-3xl font-light tracking-tight text-center border-b bg-transparent focus:outline-none px-2 w-full"
+                  style={{ borderColor: 'var(--accent)', color: 'var(--foreground)', fontWeight: 200 }}
+                  autoFocus
+                />
+              ) : (
+                <h1
+                  className="text-2xl md:text-3xl font-light tracking-tight cursor-pointer hover:opacity-60 transition-opacity"
+                  onClick={() => setEditingAlbumName(true)}
+                  title="Click to edit"
+                  style={{ fontWeight: 200 }}
+                >
+                  {album.name}
+                </h1>
+              )}
+              <p className="text-xs opacity-40 mt-2 uppercase tracking-wider">
+                {album.songs.length} {album.songs.length === 1 ? "track" : "tracks"}
+              </p>
+            </div>
+
+            {/* Right: Search, Filter, and Actions */}
+            <div className="flex items-center justify-center md:justify-end gap-2 w-full md:w-auto flex-wrap">
               {/* Search Input - Compact */}
-              <div className="relative flex-1 max-w-xs">
+              <div className="relative">
                 <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 opacity-30" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search..."
-                  className="w-full pl-7 pr-2 py-1.5 text-xs font-light bg-transparent border rounded focus:outline-none transition-colors"
+                  className="w-32 pl-7 pr-2 py-1.5 text-xs font-light bg-transparent border rounded focus:outline-none transition-colors"
                   style={{
                     borderColor: searchQuery ? 'var(--accent)' : 'var(--border)',
                     color: 'var(--foreground)'
@@ -881,12 +856,39 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                     setSearchQuery("");
                     setOriginFilter("All");
                   }}
-                  className="px-2 py-1.5 text-xs opacity-40 hover:opacity-100 transition-opacity"
+                  className="p-1.5 text-xs opacity-40 hover:opacity-100 transition-opacity"
                   title="Clear filters"
                 >
                   <X className="w-3 h-3" />
                 </button>
               )}
+
+              {/* Divider */}
+              <div className="w-px h-4 opacity-20" style={{ background: 'var(--foreground)' }}></div>
+
+              {/* Action Buttons */}
+              <button
+                onClick={() => setShowListenMode(true)}
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                style={{ color: 'var(--accent)' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <Headphones className="w-3 h-3" />
+                <span className="hidden sm:inline">Listen Mode</span>
+                <span className="sm:hidden">Listen</span>
+              </button>
+              <button
+                onClick={handleAddSong}
+                className="flex items-center gap-2 px-3 md:px-4 py-2 text-xs uppercase tracking-wider font-light transition-opacity"
+                style={{ color: 'var(--accent)' }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+              >
+                <Plus className="w-3 h-3" />
+                <span className="hidden sm:inline">Add Track</span>
+                <span className="sm:hidden">Add</span>
+              </button>
             </div>
           </div>
         </div>
