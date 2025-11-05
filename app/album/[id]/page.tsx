@@ -14,7 +14,8 @@ import {
   Trash2,
   Headphones,
   Download,
-  Upload as UploadIcon
+  Upload as UploadIcon,
+  Search
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -72,6 +73,8 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [fileManagerOpen, setFileManagerOpen] = useState<{ songId: string; type: "audio" | "logic"; songTitle: string } | null>(null);
   const [youtubePlayer, setYoutubePlayer] = useState<{ videoId: string; title: string } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ [songId: string]: { [fileKey: string]: { progress: number; status: string; fileName: string } } }>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [originFilter, setOriginFilter] = useState<string>("All");
 
   useEffect(() => {
     loadAlbum();
@@ -428,6 +431,34 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         };
       })
       .filter((file: any) => file !== null);
+  };
+
+  const getFilteredSongs = () => {
+    if (!album) return [];
+
+    let filtered = album.songs;
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      filtered = filtered.filter((song: any) => {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          song.title.toLowerCase().includes(searchLower) ||
+          song.notes?.toLowerCase().includes(searchLower) ||
+          song.lyrics?.toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Filter by origin
+    if (originFilter !== "All") {
+      filtered = filtered.filter((song: any) => {
+        const songOrigin = song.origin || "Group Nashville";
+        return songOrigin === originFilter;
+      });
+    }
+
+    return filtered;
   };
 
   const handlePageDragOver = (e: React.DragEvent) => {
@@ -807,6 +838,59 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               </button>
             </div>
           </div>
+
+          {/* Search and Filter Row */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 mt-4 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+            {/* Search Input */}
+            <div className="flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search tracks..."
+                className="w-full px-3 py-2 text-sm font-light bg-transparent border rounded focus:outline-none transition-colors"
+                style={{
+                  borderColor: searchQuery ? 'var(--accent)' : 'var(--border)',
+                  color: 'var(--foreground)'
+                }}
+              />
+            </div>
+
+            {/* Origin Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs opacity-40 uppercase tracking-wider whitespace-nowrap">Filter by:</span>
+              <select
+                value={originFilter}
+                onChange={(e) => setOriginFilter(e.target.value)}
+                className="px-3 py-2 text-xs uppercase tracking-wider font-medium rounded focus:outline-none transition-all"
+                style={{
+                  background: originFilter === "All" ? 'var(--border)' : getOriginColor(originFilter),
+                  color: originFilter === "All" ? 'var(--foreground)' : 'white',
+                  border: 'none'
+                }}
+              >
+                <option>All</option>
+                <option>Dev +</option>
+                <option>Andy +</option>
+                <option>Khal +</option>
+                <option>Bunnetta Week</option>
+                <option>Group Nashville</option>
+              </select>
+            </div>
+
+            {/* Clear Filters */}
+            {(searchQuery || originFilter !== "All") && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setOriginFilter("All");
+                }}
+                className="px-3 py-2 text-xs uppercase tracking-wider font-light opacity-40 hover:opacity-100 transition-opacity"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -826,9 +910,26 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
               Add Your First Track
             </button>
           </div>
+        ) : getFilteredSongs().length === 0 ? (
+          <div className="text-center py-16 md:py-32">
+            <div className="w-2 h-2 rounded-full mx-auto mb-8 opacity-20" style={{ background: 'var(--accent)' }}></div>
+            <p className="text-sm opacity-40 font-light tracking-wide mb-4">No tracks match your filters</p>
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setOriginFilter("All");
+              }}
+              className="text-xs uppercase tracking-[0.2em] font-light transition-opacity"
+              style={{ color: 'var(--accent)' }}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.6'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              Clear Filters
+            </button>
+          </div>
         ) : (
           <div className="space-y-px" style={{ background: 'var(--border)' }}>
-            {album.songs.map((song: any, index: number) => {
+            {getFilteredSongs().map((song: any, index: number) => {
               const isDragging = draggedIndex === index;
               const isDropTarget = dragOverIndex === index && draggedIndex !== index;
 

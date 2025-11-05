@@ -103,6 +103,7 @@ export async function updateSong(
     lyrics?: string;
     notes?: string;
     progress?: string;
+    origin?: string;
     user?: string;
   }
 ) {
