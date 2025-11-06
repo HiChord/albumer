@@ -80,18 +80,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => {
     loadAlbum();
-
-    // Auto-refresh every 30 seconds, but only if not editing or playing
-    const interval = setInterval(() => {
-      // Don't refresh if user is editing (has typing debounce active) or if audio is playing
-      const hasActiveEdits = Object.keys(editingValuesRef.current).length > 0;
-      if (!hasActiveEdits && !playingSongRef.current) {
-        loadAlbum();
-      }
-    }, 30000); // Increased to 30 seconds
-
-    return () => clearInterval(interval);
-  }, [resolvedParams.id]); // Only depend on the album ID, not editing state
+  }, [resolvedParams.id]);
 
   const loadAlbum = async () => {
     // Preserve scroll position

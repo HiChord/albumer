@@ -21,13 +21,6 @@ export default function Home() {
 
   useEffect(() => {
     loadAlbums();
-
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(() => {
-      loadAlbums();
-    }, 10000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const loadAlbums = async () => {
