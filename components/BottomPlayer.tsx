@@ -25,6 +25,28 @@ export default function BottomPlayer({ song, onClose, onNext, onPrevious, hasNex
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Listen for pause events from other players (ListenMode, etc.)
+  // This must run BEFORE the early return so it's always set up
+  useEffect(() => {
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      console.log('[BottomPlayer] Received pause-all-players event from:', customEvent.detail.source);
+      if (customEvent.detail.source !== 'bottom-player' && wavesurferRef.current) {
+        console.log('[BottomPlayer] Pausing wavesurfer');
+        wavesurferRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+
+    console.log('[BottomPlayer] Setting up pause event listener');
+    window.addEventListener('pause-all-players', handlePauseEvent);
+
+    return () => {
+      console.log('[BottomPlayer] Removing pause event listener');
+      window.removeEventListener('pause-all-players', handlePauseEvent);
+    };
+  }, []);
+
   useEffect(() => {
     if (!waveformRef.current || !song) return;
 
@@ -97,23 +119,6 @@ export default function BottomPlayer({ song, onClose, onNext, onPrevious, hasNex
       wavesurfer.destroy();
     };
   }, [song?.id, song?.audioUrl]);
-
-  // Listen for pause events from other players (ListenMode, etc.)
-  useEffect(() => {
-    const handlePauseEvent = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      if (customEvent.detail.source !== 'bottom-player' && wavesurferRef.current) {
-        wavesurferRef.current.pause();
-        setIsPlaying(false);
-      }
-    };
-
-    window.addEventListener('pause-all-players', handlePauseEvent);
-
-    return () => {
-      window.removeEventListener('pause-all-players', handlePauseEvent);
-    };
-  }, []);
 
   const togglePlayPause = () => {
     if (wavesurferRef.current) {
