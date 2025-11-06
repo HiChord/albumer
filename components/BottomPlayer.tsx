@@ -60,9 +60,16 @@ export default function BottomPlayer({ song, onClose, onNext, onPrevious, hasNex
       setDuration(wavesurfer.getDuration());
       wavesurfer.play();
       setIsPlaying(true);
+      // Pause all other players when this starts playing
+      window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: 'bottom-player' } }));
     });
 
-    wavesurfer.on("play", () => setIsPlaying(true));
+    wavesurfer.on("play", () => {
+      setIsPlaying(true);
+      // Pause all other players when this starts playing
+      window.dispatchEvent(new CustomEvent('pause-all-players', { detail: { source: 'bottom-player' } }));
+    });
+
     wavesurfer.on("pause", () => setIsPlaying(false));
     wavesurfer.on("finish", () => {
       setIsPlaying(false);
@@ -90,6 +97,23 @@ export default function BottomPlayer({ song, onClose, onNext, onPrevious, hasNex
       wavesurfer.destroy();
     };
   }, [song?.id, song?.audioUrl]);
+
+  // Listen for pause events from other players (ListenMode, etc.)
+  useEffect(() => {
+    const handlePauseEvent = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.source !== 'bottom-player' && wavesurferRef.current) {
+        wavesurferRef.current.pause();
+        setIsPlaying(false);
+      }
+    };
+
+    window.addEventListener('pause-all-players', handlePauseEvent);
+
+    return () => {
+      window.removeEventListener('pause-all-players', handlePauseEvent);
+    };
+  }, []);
 
   const togglePlayPause = () => {
     if (wavesurferRef.current) {
