@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Music, Plus, Clock, Trash2 } from "lucide-react";
+import { Music, Plus, Clock, Trash2, Copy } from "lucide-react";
 import Link from "next/link";
-import { createAlbum, getAlbums, deleteAlbum } from "@/lib/actions";
+import { createAlbum, getAlbums, deleteAlbum, duplicateAlbum } from "@/lib/actions";
 
 interface Album {
   id: string;
@@ -56,6 +56,13 @@ export default function Home() {
     e.stopPropagation();
     if (!confirm(`Delete album "${albumName}"? This will delete all songs and cannot be undone.`)) return;
     await deleteAlbum(albumId);
+    await loadAlbums();
+  };
+
+  const handleDuplicateAlbum = async (e: React.MouseEvent, albumId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await duplicateAlbum(albumId);
     await loadAlbums();
   };
 
@@ -187,8 +194,24 @@ export default function Home() {
                   }}
                 >
                   <div className="flex flex-col h-full">
-                    <div className="mb-8">
+                    <div className="mb-8 flex items-center justify-between">
                       <div className="w-2 h-2 rounded-full opacity-40 group-hover:opacity-100 transition-opacity" style={{ background: 'var(--accent)' }}></div>
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => handleDuplicateAlbum(e, album.id)}
+                          className="p-1 hover:opacity-60 transition-opacity"
+                          title="Duplicate album"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteAlbum(e, album.id, album.name)}
+                          className="p-1 hover:opacity-60 transition-opacity"
+                          title="Delete album"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <h3 className="text-2xl font-light tracking-tight mb-3">
                       {album.name}

@@ -44,6 +44,7 @@ import DragDropOverlay from "@/components/DragDropOverlay";
 import FileAssignmentModal from "@/components/FileAssignmentModal";
 import FileManager from "@/components/FileManager";
 import YouTubePlayer from "@/components/YouTubePlayer";
+import BottomPlayer from "@/components/BottomPlayer";
 import { useUser } from "@/lib/UserContext";
 
 export default function AlbumPage({ params }: { params: Promise<{ id: string }> }) {
@@ -75,6 +76,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const [uploadProgress, setUploadProgress] = useState<{ [songId: string]: { [fileKey: string]: { progress: number; status: string; fileName: string } } }>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [originFilter, setOriginFilter] = useState<string>("All");
+  const trackDropHandled = useRef(false);
 
   useEffect(() => {
     loadAlbum();
@@ -92,11 +94,19 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   }, [resolvedParams.id]); // Only depend on the album ID, not editing state
 
   const loadAlbum = async () => {
+    // Preserve scroll position
+    const scrollY = window.scrollY;
+
     setLoading(true);
     const data = await getAlbum(resolvedParams.id);
     setAlbum(data);
     if (data) setAlbumName(data.name);
     setLoading(false);
+
+    // Restore scroll position after render
+    requestAnimationFrame(() => {
+      window.scrollTo(0, scrollY);
+    });
   };
 
   const handleUpdateAlbumName = async () => {
@@ -348,6 +358,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
   const handleTrackDrop = async (e: React.DragEvent, songId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    trackDropHandled.current = true; // Mark that track handled the drop
     setDragOverSongId(null);
     setIsDraggingFiles(false);
 
@@ -461,6 +472,69 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     return filtered;
   };
 
+  const getCurrentPlayingSong = () => {
+    if (!playingSong || !album) return null;
+    const song = album.songs.find((s: any) => s.id === playingSong);
+    if (!song) return null;
+    const audioFile = getAudioFile(song);
+    if (!audioFile) return null;
+    return {
+      id: song.id,
+      title: song.title,
+      audioUrl: audioFile.url,
+    };
+  };
+
+  const handleNextSong = () => {
+    if (!album || !playingSong) return;
+    const currentIndex = album.songs.findIndex((s: any) => s.id === playingSong);
+    if (currentIndex === -1) return;
+
+    // Find next song with audio
+    for (let i = currentIndex + 1; i < album.songs.length; i++) {
+      if (getAudioFile(album.songs[i])) {
+        setPlayingSong(album.songs[i].id);
+        return;
+      }
+    }
+  };
+
+  const handlePreviousSong = () => {
+    if (!album || !playingSong) return;
+    const currentIndex = album.songs.findIndex((s: any) => s.id === playingSong);
+    if (currentIndex === -1) return;
+
+    // Find previous song with audio
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (getAudioFile(album.songs[i])) {
+        setPlayingSong(album.songs[i].id);
+        return;
+      }
+    }
+  };
+
+  const hasNextSong = () => {
+    if (!album || !playingSong) return false;
+    const currentIndex = album.songs.findIndex((s: any) => s.id === playingSong);
+    if (currentIndex === -1) return false;
+
+    for (let i = currentIndex + 1; i < album.songs.length; i++) {
+      if (getAudioFile(album.songs[i])) return true;
+    }
+    return false;
+  };
+
+  const hasPreviousSong = () => {
+    if (!album || !playingSong) return false;
+    const currentIndex = album.songs.findIndex((s: any) => s.id === playingSong);
+    if (currentIndex === -1) return false;
+
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (getAudioFile(album.songs[i])) return true;
+    }
+    return false;
+  };
+
   const handlePageDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -482,6 +556,12 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingFiles(false);
+
+    // Check if a track already handled this drop
+    if (trackDropHandled.current) {
+      trackDropHandled.current = false; // Reset the flag
+      return; // Don't show the modal
+    }
 
     const files = Array.from(e.dataTransfer.files);
     if (files.length === 0) return;
@@ -1192,17 +1272,6 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                   )}
                 </div>
 
-                {/* Audio Player */}
-                {playingSong === song.id && getAudioFile(song) && (
-                  <div className="px-4 md:px-8 py-4 border-b" style={{ background: 'var(--surface-alt)', borderColor: 'var(--border)' }}>
-                    <WaveformPlayer
-                      url={getAudioFile(song).url}
-                      filename={getAudioFile(song).name}
-                      autoplay={true}
-                    />
-                  </div>
-                )}
-
                 {/* Content Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-px p-px" style={{ background: 'var(--border)' }}>
                   {/* Notes */}
@@ -1506,6 +1575,16 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
         onClose={() => setShowListenMode(false)}
         audioFiles={getAudioFiles()}
         onReorder={handleReorderFromListenMode}
+      />
+
+      {/* Bottom Player */}
+      <BottomPlayer
+        song={getCurrentPlayingSong()}
+        onClose={() => setPlayingSong(null)}
+        onNext={handleNextSong}
+        onPrevious={handlePreviousSong}
+        hasNext={hasNextSong()}
+        hasPrevious={hasPreviousSong()}
       />
     </div>
   );

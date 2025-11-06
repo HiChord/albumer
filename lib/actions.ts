@@ -21,6 +21,37 @@ export async function deleteAlbum(id: string) {
   revalidatePath("/");
 }
 
+export async function duplicateAlbum(id: string) {
+  const originalAlbum = await storage.getAlbumById(id);
+  if (!originalAlbum) return null;
+
+  // Create new album with "Copy of" prefix
+  const newAlbumName = `Copy of ${originalAlbum.name}`;
+  const newAlbum = await storage.createAlbum(newAlbumName);
+
+  // Get all songs from original album
+  const originalSongs = await storage.getSongsByAlbumId(id);
+
+  // Duplicate each song (without files/references/comments)
+  for (const song of originalSongs) {
+    await storage.createSong(newAlbum.id, song.title);
+    // Get the newly created song
+    const newSongs = await storage.getSongsByAlbumId(newAlbum.id);
+    const newSong = newSongs[newSongs.length - 1];
+
+    // Update song with original data
+    await storage.updateSong(newSong.id, {
+      lyrics: song.lyrics,
+      notes: song.notes,
+      progress: song.progress,
+      origin: song.origin,
+    }, "User");
+  }
+
+  revalidatePath("/");
+  return newAlbum;
+}
+
 export async function getAlbums() {
   const albums = await storage.getAllAlbums();
 
