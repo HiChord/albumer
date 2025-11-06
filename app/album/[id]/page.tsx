@@ -422,7 +422,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
       "Dev +": "#8B5CF6",
       "Andy +": "#06B6D4",
       "Khal +": "#EC4899",
-      "Bunnetta Week": "#F59E0B",
+      "Bunetta Week": "#F59E0B",
       "Group Nashville": "#10B981",
     };
     return colors[origin] || "#10B981"; // Default to "Group Nashville" color
@@ -888,7 +888,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                 <option>Dev +</option>
                 <option>Andy +</option>
                 <option>Khal +</option>
-                <option>Bunnetta Week</option>
+                <option>Bunetta Week</option>
                 <option>Group Nashville</option>
               </select>
 
@@ -1199,7 +1199,7 @@ export default function AlbumPage({ params }: { params: Promise<{ id: string }> 
                           <option>Dev +</option>
                           <option>Andy +</option>
                           <option>Khal +</option>
-                          <option>Bunnetta Week</option>
+                          <option>Bunetta Week</option>
                           <option>Group Nashville</option>
                         </select>
                       </div>
